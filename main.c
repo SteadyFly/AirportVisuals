@@ -425,72 +425,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     
     int ppn = 1560/6; //150 pixels per nautical mile. This is a 5nm scale right now.
     int rwyAngle = 310;
-    
-    
-    /*
-     double CURR_POS[] = {32.8513170, -96.8634520};
-     
-     double rwy_start[] = {32.8513170, -96.8634520};
-     double rwy_end[] = {32.8340290, -96.8434150};
-     
-     double nmDiffStart_x = distance(CURR_POS[0], CURR_POS[1], rwy_start[0], CURR_POS[1]);
-     double nmDiffStart_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0],rwy_start[1]);
-     
-     double nmDiffEnd_x = distance(CURR_POS[0], CURR_POS[1], rwy_end[0], CURR_POS[1]);
-     double nmDiffEnd_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0],rwy_end[1]);
-     
-     double pxStart_x;
-     double pxStart_y;
-     
-     double pxEnd_x;
-     double pxEnd_y;
-     
-     if (CURR_POS[0] > rwy_start[0])
-     {
-     pxStart_x = x + (nmDiffStart_x*ppn);
-     pxEnd_x = x + (nmDiffEnd_x*ppn);
-     }
-     else
-     {
-     pxStart_x = x - (nmDiffStart_x*ppn);
-     pxEnd_x = x - (nmDiffEnd_x*ppn);
-     }
-     
-     if (CURR_POS[1] > rwy_start[1])
-     {
-     pxStart_y = y - (nmDiffStart_y*ppn);
-     pxEnd_y = y - (nmDiffEnd_y*ppn);
-     }
-     else
-     {
-     pxStart_y = y + (nmDiffStart_y*ppn);
-     pxEnd_y = y + (nmDiffEnd_y*ppn);
-     }
-     */
-    
-    /*
-     
-     cairo_set_source_rgb(cr, 1, 1, 1);
-     //cairo_arc(cr, pxStart_x, pxStart_y, 5, 0, 2*M_PI);
-     cairo_save(cr);
-     
-     cairo_set_line_width(cr, 15.0);
-     cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
-     cairo_move_to(cr,  pxStart_x, pxStart_y);
-     
-     
-     // cairo_arc(cr, pxEnd_x, pxEnd_y, 5, 0, 2*M_PI);
-     cairo_line_to(cr,  pxEnd_x, pxEnd_y);
-     cairo_stroke(cr);
-     
-     cairo_restore(cr);
-     */
-    
-    
-    //cairo_stroke(cr);
-    
-    //"1" with 3 blanks after
-    
+  
     
     
     /* EXAMPLE FORMAT
@@ -512,7 +447,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
      100 60.05 1 0 0.00 1 3 0 08R 48.9929139 2.5656774 0 150 3 2 1 0 26L 48.9948780 2.6024330 0 149 3 2 1 0
      */
     
-    const char* filename = "/Users/irfan.siddiqui/Documents/ND_DISPLAY/ND_DISPLAY/apt.dat";
+    
+    cairo_identity_matrix(cr);
+
+    cairo_translate(cr, x, y);
+    
+    const char* filename = "/Users/irfan.siddiqui/Documents/ND_DISPLAY 2/AirportVisuals/apt.dat";
     
     const int chunk_size = 1024*4;
     char buffer[chunk_size];
@@ -537,8 +477,9 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     char rwyList[32][128];
     int rwyCount = 0;
     char iata_code[256];
-    
-    
+    char datum_lat[256];
+    char datum_lon[256];
+
     while (fread(buffer, chunk_size, 1, file) == 1)
     {
         char *occurrence = strstr(buffer, apt);
@@ -566,7 +507,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                 aptRaw[line_length] = '\0';
                 
                 cairo_move_to(cr, 100, 200);
-             //   cairo_show_text(cr, line);
+      
                 
                 // Parse file for iata_code
                 char *iata_start = strstr(line_end, "1302 iata_code");
@@ -584,14 +525,43 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                     
                     cairo_move_to(cr, 100, 250);
                    //cairo_show_text(cr, iata_code);
-                    
-                    
-                    
                 }
                 
+                // Parse file for datum_lat
+                char *datum_lat_start = strstr(line_end, "1302 datum_lat");
+                if (datum_lat_start != NULL)
+                {
+                    datum_lat_start += 5;
+                    char *datum_lat_end = datum_lat_start;
+                    while (*datum_lat_end != '\n' && *datum_lat_end != '\0')
+                    {
+                        datum_lat_end++;
+                    }
+                    int datum_lat_length = datum_lat_end - datum_lat_start;
+                    strncpy(datum_lat, datum_lat_start, datum_lat_length);
+                    datum_lat[datum_lat_length] = '\0';
+                    
+                    cairo_move_to(cr, 100, 300);
+                    //cairo_show_text(cr, datum_lat);
+                }
                 
-                
-                
+                // Parse file for datum_lon
+                char *datum_lon_start = strstr(line_end, "1302 datum_lon");
+                if (datum_lon_start != NULL)
+                {
+                    datum_lon_start += 5;
+                    char *datum_lon_end = datum_lon_start;
+                    while (*datum_lon_end != '\n' && *datum_lon_end != '\0')
+                    {
+                        datum_lon_end++;
+                    }
+                    int datum_lon_length = datum_lon_end - datum_lon_start;
+                    strncpy(datum_lon, datum_lon_start, datum_lon_length);
+                    datum_lon[datum_lon_length] = '\0';
+                    
+                    cairo_move_to(cr, 100, 350);
+                    //cairo_show_text(cr, datum_lon);
+                }
                 
                 char *occurrence2 = strstr(buffer, "100 ");
                 if (occurrence2 != NULL) {
@@ -628,16 +598,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                         rwyCount++;
                     }
                 }
-                
-                
-                
-                
             }
         }
         
-        
         line_number += count_newlines(buffer, chunk_size);
     }
+    
     
     char rwyNumsList[32][2][48];
     int runwayCount = 0;
@@ -697,14 +663,14 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
         
     }
     
-    
+    cairo_identity_matrix(cr);
     
     
     char aptFull[256];
     memcpy(aptFull, &aptRaw[18], 255);
     aptFull[255] = '\0';
     cairo_set_font_size(cr, 35);
-    draw_text(cr, aptFull, 1071-5, 35, 2);
+    draw_text(cr, aptFull, 1000-5, 35, 2);
     
     
     char aptICAO[5];
@@ -718,7 +684,22 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     aptIATA[4] = "\0";
     
     cairo_set_font_size(cr, 35);
-    draw_text(cr, aptIATA, 1000, 70, 2);
+    draw_text(cr, aptIATA, 1000-5, 70, 2);
+    
+    
+    char datum_lat_raw[256];
+    memcpy(datum_lat_raw, datum_lat + 10, sizeof(datum_lat) - 14);
+    datum_lat_raw[sizeof(datum_lat) - 14] = '\0';
+    double datum_lat_value = atof(datum_lat_raw);
+
+    char datum_lon_raw[256];
+    memcpy(datum_lon_raw, datum_lon + 10, sizeof(datum_lon) - 14);
+    datum_lon_raw[sizeof(datum_lon) - 14] = '\0';
+    double datum_lon_value = atof(datum_lon_raw);
+
+    
+    
+
     
     
     
@@ -738,7 +719,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     sprintf(test, "%d", rwyCoordsList[0][0]);
     
     
-    double CURR_POS[] = {43.6156111, 1.3802797};
+    double CURR_POS[] = {datum_lat_value, datum_lon_value};
     
     
     
@@ -841,12 +822,16 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
         
         cairo_restore(cr);
         
+        cairo_set_font_size(cr, 30);
+        
         angle = atan2(pxEnd_y - pxStart_y, pxEnd_x - pxStart_x);
         cairo_text_extents_t extents;
         cairo_text_extents(cr, rwyNumsList[f][1], &extents);
+
         cairo_save(cr);
         cairo_translate(cr, 30 * cos(angle), 30 * sin(angle));
-        
+
+        // Transformations for the first side of the runway text
         cairo_translate(cr, pxEnd_x - (extents.width/2 + extents.x_bearing) * cos(angle + M_PI/2) - (extents.height/2 + extents.y_bearing) * sin(angle + M_PI/2), pxEnd_y - (extents.width/2 + extents.x_bearing) * sin(angle + M_PI/2) + (extents.height/2 + extents.y_bearing) * cos(angle + M_PI/2));
         cairo_rotate(cr, angle + M_PI/2);
         center_x = extents.x_bearing + extents.width / 2;
@@ -854,29 +839,131 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
         cairo_translate(cr, center_x, center_y);
         cairo_rotate(cr, M_PI);
         cairo_translate(cr, -center_x, -center_y);
+        
+        
+        
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, extents.x_bearing, extents.y_bearing+extents.height);
+        cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width/2, extents.y_bearing - extents.height/2);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
+        cairo_close_path(cr);
+        cairo_fill(cr);
+        
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        
+        
+        
         cairo_show_text(cr, rwyNumsList[f][1]);
-        
-        //cairo_rectangle(cr, extents.x_bearing, extents.y_bearing, extents.width, extents.height);
-        
+
         cairo_set_line_width(cr, 2.5);
         cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+        cairo_move_to(cr, extents.x_bearing, extents.y_bearing+extents.height);
+        cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width/2, extents.y_bearing - extents.height/2);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
+        cairo_stroke(cr);
+        
+        cairo_set_font_size(cr, 35);
+        //second side
+
+        cairo_restore(cr);
+
+        cairo_save(cr);
+        cairo_translate(cr, 30 * cos(angle + M_PI), 30 * sin(angle + M_PI));
+        
+        cairo_text_extents(cr, rwyNumsList[f][0], &extents);
+
+        // Transformations for the second side of the runway text
+        cairo_translate(cr, pxStart_x - (extents.width/2 + extents.x_bearing) * cos(angle + M_PI/2) - (extents.height/2 + extents.y_bearing) * sin(angle + M_PI/2), pxStart_y - (extents.width/2 + extents.x_bearing) * sin(angle + M_PI/2) + (extents.height/2 + extents.y_bearing) * cos(angle + M_PI/2));
+        cairo_rotate(cr, angle + M_PI + M_PI/2); // Rotate by 180 degrees
+        center_x = extents.x_bearing + extents.width / 2;
+        center_y = extents.y_bearing + extents.height / 2;
+        cairo_translate(cr, 0, -extents.height * 2);
+        cairo_rotate(cr, M_PI);
+        
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, extents.x_bearing, extents.y_bearing+extents.height);
+        cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width/2, extents.y_bearing - extents.height/2);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing);
+        cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
+        cairo_close_path(cr);
+        cairo_fill(cr);
+        
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        
+        cairo_show_text(cr, rwyNumsList[f][0]);
+
+        cairo_set_line_width(cr, 2.5);
+        cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+        
+        
+
+        
         
         cairo_move_to(cr, extents.x_bearing, extents.y_bearing+extents.height);
         cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
         cairo_line_to(cr, extents.x_bearing + extents.width/2, extents.y_bearing - extents.height/2);
         cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing);
         cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
-        
         cairo_stroke(cr);
         
         
 
-        
-        
+
         cairo_restore(cr);
         
         
+        
+
+        
         //Draw the rwy numbers in the center:
+        
+        char combinedNums[256];
+        
+        strcpy(combinedNums, rwyNumsList[f][0]);
+        strcat(combinedNums, "-");
+        strcat(combinedNums, rwyNumsList[f][1]);
+        
+        // Calculate the center of the runway
+        double centerX = (pxStart_x + pxEnd_x) / 2.0;
+        double centerY = (pxStart_y + pxEnd_y) / 2.0;
+
+        // Define the width and height of the rectangle
+        double rectWidth = 100.0;
+        double rectHeight = 20.0;
+
+        // Calculate the coordinates of the rectangle
+        double rectX = centerX - rectWidth / 2.0;
+        double rectY = centerY - rectHeight / 2.0;
+
+        // Set the font size for the runway text
+        cairo_set_font_size(cr, 20);
+
+        // Calculate the text extents
+        cairo_text_extents_t textExtents;
+        cairo_text_extents(cr, combinedNums, &textExtents);
+
+        // Apply transformations for the rectangle and runway text
+        cairo_save(cr);
+        cairo_translate(cr, centerX, centerY);
+        cairo_rotate(cr, angle);
+
+        // Draw the rectangle
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_rectangle(cr, -textExtents.width/2-3, -textExtents.height/2, textExtents.width+7, textExtents.height);
+        cairo_fill(cr);
+
+        // Draw the runway text in the middle of the rectangle
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_move_to(cr, -textExtents.width / 2.0, textExtents.height/2);
+        cairo_show_text(cr, combinedNums);
+
+        cairo_restore(cr);
+
         
   
         
@@ -920,7 +1007,7 @@ mapND (cairo_t *cr, double x, double y)
 {
     
     
-    drawMapRWY(cr, x, y, "LFBO");
+    
     
     const char* degreesList []  = {"N", "3", "6", "E", "12", "15", "S", "21", "24", "W", "30", "33"};
     
@@ -1046,136 +1133,6 @@ mapND (cairo_t *cr, double x, double y)
 
 
 
-static void
-MFD_ND_halfPage (cairo_t *cr, double x, double y)
-{
-    int mode = 1;
-    //0: rose
-    //1: map
-    if (mode == 0)
-    {
-        
-        // TOP LEFT SIDE ------------------------------------------>
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_set_font_size(cr, 35);
-        cairo_move_to(cr, 5, 35+5);
-        cairo_show_text(cr, "TAS");
-        
-        cairo_set_source_rgb(cr, 0, 1, 0);
-        cairo_move_to(cr, 100, 35+5);
-        cairo_show_text(cr, "---");
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_set_font_size(cr, 35);
-        cairo_move_to(cr, 185, 35+5);
-        cairo_show_text(cr, "HDG");
-        
-        cairo_set_source_rgb(cr, 0, 1, 1);
-        cairo_set_font_size(cr, 40);
-        cairo_move_to(cr, 240, 35+5);
-        cairo_show_text(cr, "178°");
-        
-        
-        cairo_set_font_size(cr, 35);
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 5, 60+5);
-        cairo_show_text(cr, "GS");
-        
-        cairo_set_source_rgb(cr, 0, 1, 0);
-        cairo_move_to(cr, 100, 60+5);
-        cairo_show_text(cr, "0");
-        
-        cairo_set_source_rgb(cr, 0, 1, 0);
-        cairo_move_to(cr, 5, 60+35+5);
-        cairo_show_text(cr, "---°/---");
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 52, 60+35+5);
-        cairo_show_text(cr, "°/");
-        
-        
-        // TOP LEFT SIDE ------------------------------------------>
-        
-        
-        // TOP RIGHT SIDE ----------------------------------------->
-        cairo_set_font_size(cr, 35);
-        cairo_set_source_rgb(cr, 1, 0, 1);
-        cairo_move_to(cr, 1071-105, 40);
-        cairo_show_text(cr, "00899");
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 1071-265, 40);
-        cairo_show_text(cr, "GPS");
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 1071-162, 40+30);
-        cairo_show_text(cr, "BRG");
-        
-        cairo_set_source_rgb(cr, 1, 0, 1);
-        cairo_move_to(cr, 1071-80, 40+30);
-        cairo_show_text(cr, "143");
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 1071-21, 40+30);
-        cairo_show_text(cr, "°");
-        
-        cairo_set_font_size(cr, 35);
-        cairo_set_source_rgb(cr, 0, 1, 0);
-        cairo_move_to(cr, 1071-110, 40+30+30);
-        cairo_show_text(cr, "0.");
-        
-        cairo_set_font_size(cr, 30);
-        cairo_set_source_rgb(cr, 0, 1, 0);
-        cairo_move_to(cr, 1071-75, 40+30+30);
-        cairo_show_text(cr, "5");
-        
-        cairo_set_font_size(cr, 30);
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 1071-40, 40+30+30);
-        cairo_show_text(cr, "NM");
-        
-        cairo_set_font_size(cr, 35);
-        cairo_set_source_rgb(cr, 1, 0.5, 0);
-        cairo_move_to(cr, 1071-110, 40+30+30+30);
-        cairo_show_text(cr, "__:__");
-        
-        cairo_set_font_size(cr, 35);
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 1071-70, 40+30+30+30);
-        cairo_show_text(cr, ":");
-        // TOP RIGHT SIDE ----------------------------------------->
-        
-        // BOTTOM LEFT SIDE ----------------------------------------->
-        better_rectangle(cr, 0, 835, 230, 4.5, 0.2890625, 0.2890625, 0.2890625);
-        better_rectangle(cr, 230, 835, 4.5, 145, 0.2890625, 0.2890625, 0.2890625);
-        better_rectangle(cr, 230, 930, 611, 4.5, 0.2890625, 0.2890625, 0.2890625);
-        better_rectangle(cr, 841, 835, 4.5, 145, 0.2890625, 0.2890625, 0.2890625);
-        better_rectangle(cr, 841, 835, 230, 4.5, 0.2890625, 0.2890625, 0.2890625);
-        better_rectangle(cr, 533.25, 930, 4.5, 50, 0.2890625, 0.2890625, 0.2890625);
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        
-        
-        
-        // CircleND(cr, 535.5, 475);
-        
-    }
-    else
-    {
-        
-        mapND(cr, 535.5, 475);
-        
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-}
 
 
 
@@ -1198,51 +1155,13 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     int width, height;
     gtk_window_get_size(GTK_WINDOW(win), &width, &height);
     
-    
-    
-    double degrees = M_PI / 180;
-    int lower_MFDSect = 0;
-    int lower_MFDPage = 0;
-    int lower_MFDShow = 1;
-    
-    
-    int mfd_page = 1;
-    //0: full ND page.
-    //1: ND half page.
-    
-    
     cairo_select_font_face(cr, "BoeingEICAS", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     
-    
-    // BACKGROUND BLACK ---------------------------------->
     cairo_set_source_rgb(cr, 0, 0, 0);
-    better_rectangle_no_rgb(cr, 0, 0, 1071, 1382);
-    // BACKGROUND BLACK ---------------------------------->
+    cairo_rectangle(cr, 0, 0, 10000, 10000);
+    cairo_fill(cr);
     
-    if (lower_MFDShow == 1) {
-        if (mfd_page == 1) {
-            MFD_ND_halfPage(cr, 0, 0);
-        }
-        
-        //General Stuffs for lower part of the MFD
-        better_rectangle(cr, 0, 985, 1072, 395, 0.33, 0.29, 0.34);
-        better_rectangle(cr, 0, 985, 262, 400, 0, 0, 0);
-        better_rectangle(cr, 0, 980, 1072, 7, 1, 1, 1);
-        
-        
-        
-        if (lower_MFDSect == 0) {
-            
-            if (lower_MFDPage == 0) {
-                MFD_low_VHFpanel(cr, 0, 0);
-            }
-            
-        }
-        
-        
-    }
-    
-    
+    drawMapRWY(cr, 500, 500, "KORD");
 }
 
 
@@ -1266,7 +1185,7 @@ int main (int argc, char *argv[])
     
     //gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
     
-    gtk_window_set_default_size(GTK_WINDOW(window), 1071, 1382);
+    gtk_window_set_default_size(GTK_WINDOW(window), 1000, 1000);
     
     
     
