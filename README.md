@@ -11,7 +11,12 @@
 <h3 align="center">AirportVisuals</h3>
 
   <p align="center">
-    Basic gtk app that utilizes cairo and the x-plane apt.dat to display an airport map given an ICAO code. <b>ALPHA 0.1<b>
+    Basic gtk app that utilizes cairo and the x-plane apt.dat to display an airport map given an ICAO code.
+    <br />
+    <br />
+    <b>ALPHA 0.1, STILL NEEDS A LOT OF WORK<b>
+      <br />
+    <br />
     <a ><img align="center" width="500" src="https://raw.githubusercontent.com/IASXP/AirportVisuals/main/demo.png"></a>
     <br />
     <br />
