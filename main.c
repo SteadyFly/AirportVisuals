@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
+const char* filename = "/path/to/your/apt.dat";
+
 
 static void do_drawing(cairo_t *, GtkWidget *);
 
@@ -452,7 +454,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
 
     cairo_translate(cr, x, y);
     
-    const char* filename = "/Users/irfan.siddiqui/Documents/ND_DISPLAY 2/AirportVisuals/apt.dat";
+    
     
     const int chunk_size = 1024*4;
     char buffer[chunk_size];
