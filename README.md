@@ -1,10 +1,5 @@
 
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
 
 
 <br />
@@ -104,13 +99,3 @@ Cactus2456 - Discord & X-Plane.org fourms
 
 
 
-[contributors-shield]: https://img.shields.io/github/contributors/evwltrs/paletino.svg?style=for-the-badge
-[contributors-url]: https://github.com/IASXP/AirportVisuals/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/evwltrs/paletino.svg?style=for-the-badge
-[forks-url]: https://github.com/IASXP/AirportVisuals/network/members
-[stars-shield]: https://img.shields.io/github/stars/evwltrs/paletino.svg?style=for-the-badge
-[stars-url]: https://github.com/IASXP/AirportVisuals/stargazers
-[issues-shield]: https://img.shields.io/github/issues/evwltrs/paletino.svg?style=for-the-badge
-[issues-url]: https://github.com/IASXP/AirportVisuals/issues
-[license-shield]: https://img.shields.io/github/license/evwltrs/paletino.svg?style=for-the-badge
-[license-url]: https://github.com/IASXP/AirportVisuals/blob/main/LICENSE.txt
