@@ -212,6 +212,10 @@ MFD_low_VHFpanel(cairo_t *cr, double x, double y)
 
 static void
 CircleND(cairo_t *cr, double x, double y) {
+    /*
+    * Unused function
+    */
+  
     const char* degreesList []  = {"N", "3", "6", "E", "12", "15", "S", "21", "24", "W", "30", "33"};
     
     double r = 375;
