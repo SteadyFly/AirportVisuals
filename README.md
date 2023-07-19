@@ -17,7 +17,7 @@
     <b>ALPHA 0.1, STILL NEEDS A LOT OF WORK<b>
       <br />
     <br />
-    <a ><img align="center" width="500" src="https://raw.githubusercontent.com/IASXP/AirportVisuals/main/demo.png"></a>
+    <a ><img align="center" width="500" src="https://s12.gifyu.com/images/SWtIV.gif"></a>
     <br />
     <br />
     <br />
