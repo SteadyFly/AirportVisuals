@@ -405,23 +405,26 @@ CircleND(cairo_t *cr, double x, double y) {
 }
 
 
+int line_number = 1;
+char line[256];
+char line2[256];
+char aptRaw[256];
+// char rwyList[40][256];
+char rwyList[32][128];
+int rwyCount = 0;
+char iata_code[256];
+char datum_lat[256];
+char datum_lon[256];
 
+char rwyNumsList[32][2][48];
+int runwayCount = 0;
 
-
-
+char rwyCoordsListChar[10][4][48];
 
 
 static void
-drawMapRWY(cairo_t *cr, double x, double y, char* apt)
+parseAptdat(char* apt)
 {
-    //0.5 nm to edge
-    //780px to edge
-    
-    int ppn = 1560/6; //150 pixels per nautical mile. This is a 5nm scale right now.
-    int rwyAngle = 310;
-  
-    
-    
     /* EXAMPLE FORMAT
      1    392 0 0 LFPG Paris - Charles De Gaulle
      1302 city Paris
@@ -442,9 +445,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
      */
     
     
-    cairo_identity_matrix(cr);
-
-    cairo_translate(cr, x, y);
+    
     
     const char* filename = "/Users/apt.dat";
     
@@ -456,23 +457,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     
     if (file == NULL)
     {
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, 100, 100);
-        cairo_show_text(cr, "File error");
+       
         perror("fopen");
         
     }
     
-    int line_number = 1;
-    char line[256];
-    char line2[256];
-    char aptRaw[256];
-    // char rwyList[40][256];
-    char rwyList[32][128];
-    int rwyCount = 0;
-    char iata_code[256];
-    char datum_lat[256];
-    char datum_lon[256];
+
 
     while (fread(buffer, chunk_size, 1, file) == 1)
     {
@@ -495,12 +485,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
             
             if (strncmp(line, "1    ", 5) == 0)
             {
-                cairo_set_source_rgb(cr, 1, 1, 1);
+            
                 
                 strncpy(aptRaw, line_start, line_length);
                 aptRaw[line_length] = '\0';
                 
-                cairo_move_to(cr, 100, 200);
+           
       
                 
                 // Parse file for iata_code
@@ -517,7 +507,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                     strncpy(iata_code, iata_start, iata_length);
                     iata_code[iata_length] = '\0';
                     
-                    cairo_move_to(cr, 100, 250);
+                 
                    //cairo_show_text(cr, iata_code);
                 }
                 
@@ -535,7 +525,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                     strncpy(datum_lat, datum_lat_start, datum_lat_length);
                     datum_lat[datum_lat_length] = '\0';
                     
-                    cairo_move_to(cr, 100, 300);
+                
                     //cairo_show_text(cr, datum_lat);
                 }
                 
@@ -553,7 +543,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
                     strncpy(datum_lon, datum_lon_start, datum_lon_length);
                     datum_lon[datum_lon_length] = '\0';
                     
-                    cairo_move_to(cr, 100, 350);
+           
                     //cairo_show_text(cr, datum_lon);
                 }
                 
@@ -599,10 +589,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     }
     
     
-    char rwyNumsList[32][2][48];
-    int runwayCount = 0;
-    
-    char rwyCoordsListChar[10][4][48];
+
     
     
     
@@ -626,6 +613,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
             }
             else if (field == 9)
             {
+                printf(token);
                 strncpy(rwyCoordsListChar[runwayCount][0], token, 11);
                 rwyCoordsListChar[runwayCount][0][11] = '\0';
             }
@@ -656,9 +644,32 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
         
         
     }
+    fclose(file);
     
-    cairo_identity_matrix(cr);
+}
+
+
+
+int timesparsed = 0;
+
+static void
+drawMapRWY(cairo_t *cr, double x, double y, char* apt)
+{
+    //0.5 nm to edge
+    //780px to edge
     
+
+    int ppn = 1560/6; //150 pixels per nautical mile. This is a 5nm scale right now.
+    int rwyAngle = 310;
+  
+    if (!timesparsed > 0)
+    {
+        parseAptdat(apt);
+        timesparsed++;
+    }
+    
+    
+    cairo_set_source_rgb(cr, 1, 1, 1);
     
     char aptFull[256];
     memcpy(aptFull, &aptRaw[18], 255);
@@ -670,6 +681,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     char aptICAO[5];
     memcpy(aptICAO, &aptRaw[13], 4);
     aptICAO[5] = "\0";
+    //printf(aptICAO);
     cairo_set_font_size(cr, 35);
     draw_text(cr, aptICAO, 900, 70, 2);
     
@@ -973,7 +985,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     
     
     
-    fclose(file);
+    
     
     
     
