@@ -2,7 +2,7 @@
 //  main.c
 //  ND_DISPLAY
 //
-//  Created by Cactus2456.
+//  Created by  on 1/31/23.
 //
 
 
@@ -14,18 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
-const char* filename = "/path/to/your/apt.dat";
 
 
-static void do_drawing(cairo_t *, GtkWidget *);
-
-static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
-                              gpointer user_data)
-{
-    do_drawing(cr, widget);
-    
-    return FALSE;
-}
 
 
 
@@ -419,6 +409,8 @@ CircleND(cairo_t *cr, double x, double y) {
 
 
 
+
+
 static void
 drawMapRWY(cairo_t *cr, double x, double y, char* apt)
 {
@@ -454,7 +446,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
 
     cairo_translate(cr, x, y);
     
-    
+    const char* filename = "/Users/apt.dat";
     
     const int chunk_size = 1024*4;
     char buffer[chunk_size];
@@ -746,63 +738,56 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt)
     cairo_rotate(cr, -M_PI / 2);
     cairo_translate(cr, -x, -y);
     
+    const double a = 6378137.0; // Semi-major axis
+    const double b = 6356752.314245; // Semi-minor axis
+    
     for (int f = 0; f <= 10; f++)
     {
         
         
-        double rwy_start[] = {rwyCoordsList[f][0], rwyCoordsList[f][1]};
-        double rwy_end[] = {rwyCoordsList[f][2], rwyCoordsList[f][3]};
+        double rwy_start_lat = rwyCoordsList[f][0];
+        double rwy_start_lon = rwyCoordsList[f][1];
+        double rwy_end_lat = rwyCoordsList[f][2];
+        double rwy_end_lon = rwyCoordsList[f][3];
+
+        // Convert runway start and end coordinates to Cartesian coordinates
+        double rwy_start_x = rwy_start_lon * a;
+        double rwy_start_y = log(tan(M_PI / 4.0 + rwy_start_lat * M_PI / 180.0 / 2.0)) * b;
+        double rwy_end_x = rwy_end_lon * a;
+        double rwy_end_y = log(tan(M_PI / 4.0 + rwy_end_lat * M_PI / 180.0 / 2.0)) * b;
+
+        // Calculate the distance between the current position and runway start/end
+        double nmDiffStart_x = distance(CURR_POS[0], CURR_POS[1], rwy_start_lat, CURR_POS[1]);
+        double nmDiffStart_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], rwy_start_lon);
+        double nmDiffEnd_x = distance(CURR_POS[0], CURR_POS[1], rwy_end_lat, CURR_POS[1]);
+        double nmDiffEnd_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], rwy_end_lon);
+
+        // Calculate the projected pxStart_x and pxEnd_x
         
-        nmDiffStart_x = distance(CURR_POS[0], CURR_POS[1], rwy_start[0], CURR_POS[1]);
-        nmDiffStart_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0],rwy_start[1]);
-        
-        nmDiffEnd_x = distance(CURR_POS[0], CURR_POS[1], rwy_end[0], CURR_POS[1]);
-        nmDiffEnd_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0],rwy_end[1]);
-        
-        
-        
-        if (CURR_POS[0] > rwy_start[0])
-        {
-            pxStart_x = x - (nmDiffStart_x*ppn);
-            
+
+        if (CURR_POS[0] > rwy_start_lat) {
+            pxStart_x = x - (nmDiffStart_x * ppn);
+        } else {
+            pxStart_x = x + (nmDiffStart_x * ppn);
         }
-        else
-        {
-            pxStart_x = x + (nmDiffStart_x*ppn);
-            
+
+        if (CURR_POS[0] > rwy_end_lat) {
+            pxEnd_x = x - (nmDiffEnd_x * ppn);
+        } else {
+            pxEnd_x = x + (nmDiffEnd_x * ppn);
         }
-        
-        if (CURR_POS[0] > rwy_end[0])
-        {
-            
-            pxEnd_x = x - (nmDiffEnd_x*ppn);
+
+        // Calculate the projected pxStart_y and pxEnd_y
+        if (CURR_POS[1] > rwy_start_lon) {
+            pxStart_y = y - (nmDiffStart_y * ppn);
+        } else {
+            pxStart_y = y + (nmDiffStart_y * ppn);
         }
-        else
-        {
-            
-            pxEnd_x = x + (nmDiffEnd_x*ppn);
-        }
-        
-        if (CURR_POS[1] > rwy_start[1])
-        {
-            pxStart_y = y - (nmDiffStart_y*ppn);
-            
-        }
-        else
-        {
-            pxStart_y = y + (nmDiffStart_y*ppn);
-            
-        }
-        
-        if (CURR_POS[1] > rwy_end[1])
-        {
-            
-            pxEnd_y = y - (nmDiffEnd_y*ppn);
-        }
-        else
-        {
-            
-            pxEnd_y = y + (nmDiffEnd_y*ppn);
+
+        if (CURR_POS[1] > rwy_end_lon) {
+            pxEnd_y = y - (nmDiffEnd_y * ppn);
+        } else {
+            pxEnd_y = y + (nmDiffEnd_y * ppn);
         }
         
         
@@ -1146,7 +1131,35 @@ mapND (cairo_t *cr, double x, double y)
 
 
 
+// Global position variables
+double rwy_x = 500;
+double rwy_y = 500;
 
+static gboolean on_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    if (event->button == GDK_BUTTON_PRIMARY) // left mouse button
+    {
+        rwy_x = event->x;
+        rwy_y = event->y;
+
+        gtk_widget_queue_draw(widget);
+    }
+
+    return TRUE;
+}
+
+static gboolean on_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
+{
+    if (event->state & GDK_BUTTON1_MASK) // left mouse button is pressed
+    {
+        rwy_x = event->x;
+        rwy_y = event->y;
+
+        gtk_widget_queue_draw(widget);
+    }
+
+    return TRUE;
+}
 
 
 
@@ -1163,8 +1176,18 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
     
-    drawMapRWY(cr, 500, 500, "KORD");
+    drawMapRWY(cr, rwy_x, rwy_y, "KORD");
 }
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
+                              gpointer user_data)
+{
+    do_drawing(cr, widget);
+    
+    return FALSE;
+}
+
+
 
 
 int main (int argc, char *argv[])
@@ -1176,6 +1199,8 @@ int main (int argc, char *argv[])
     
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     
+    
+    
     darea = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), darea);
     
@@ -1184,6 +1209,15 @@ int main (int argc, char *argv[])
     
     g_signal_connect(G_OBJECT(window), "destroy",
                      G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(G_OBJECT(darea), "button-press-event",
+                     G_CALLBACK(on_button_press_event), NULL);
+    g_signal_connect(G_OBJECT(darea), "motion-notify-event",
+                     G_CALLBACK(on_motion_notify_event), NULL);
+
+    // You must set the widget to receive these events.
+    gtk_widget_set_events(darea, gtk_widget_get_events(darea) |
+                                  GDK_BUTTON_PRESS_MASK |
+                                  GDK_POINTER_MOTION_MASK);
     
     //gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
     
@@ -1193,7 +1227,7 @@ int main (int argc, char *argv[])
     
     
     
-    gtk_window_set_title(GTK_WINDOW(window), "MFD");
+    gtk_window_set_title(GTK_WINDOW(window), "APTVISUALS");
     
     gtk_widget_show_all(window);
     
