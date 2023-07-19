@@ -212,10 +212,6 @@ MFD_low_VHFpanel(cairo_t *cr, double x, double y)
 
 static void
 CircleND(cairo_t *cr, double x, double y) {
-    /*
-    * Unused function
-    */
-  
     const char* degreesList []  = {"N", "3", "6", "E", "12", "15", "S", "21", "24", "W", "30", "33"};
     
     double r = 375;
@@ -654,22 +650,22 @@ parseAptdat(char* apt)
 
 
 
-int timesparsed = 0;
+int timesParsed = 0;
 
 static void
-drawMapRWY(cairo_t *cr, double x, double y, char* apt)
+drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
 {
     //0.5 nm to edge
     //780px to edge
     
 
-    int ppn = 1560/6; //150 pixels per nautical mile. This is a 5nm scale right now.
+    int ppn = pixelsPerNM; //150 pixels per nautical mile. This is a 5nm scale right now.
     int rwyAngle = 310;
   
-    if (!timesparsed > 0)
+    if (!timesParsed > 0)
     {
         parseAptdat(apt);
-        timesparsed++;
+        timesParsed++;
     }
     
     
@@ -1151,31 +1147,58 @@ mapND (cairo_t *cr, double x, double y)
 double rwy_x = 500;
 double rwy_y = 500;
 
+double click_x = 0;
+double click_y = 0;
+
+
+
+
+int ppn = 260;
+
 static gboolean on_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
+    
     if (event->button == GDK_BUTTON_PRIMARY) // left mouse button
     {
-        rwy_x = event->x;
-        rwy_y = event->y;
-
-        gtk_widget_queue_draw(widget);
+        click_x = event->x - rwy_x;
+        click_y = event->y - rwy_y;
     }
 
     return TRUE;
 }
+
 
 static gboolean on_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
+    
     if (event->state & GDK_BUTTON1_MASK) // left mouse button is pressed
     {
-        rwy_x = event->x;
-        rwy_y = event->y;
+        rwy_x = event->x - click_x;
+        rwy_y = event->y - click_y;
 
         gtk_widget_queue_draw(widget);
     }
 
     return TRUE;
 }
+
+static gboolean on_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer data)
+{
+    if (event->direction == GDK_SCROLL_UP)
+    {
+        ppn += 20; // zoom in, adjust the value to suit your needs
+    }
+    else if (event->direction == GDK_SCROLL_DOWN)
+    {
+        ppn -= 20; // zoom out, adjust the value to suit your needs
+        if (ppn < 0) ppn = 0; // ensure it doesn't go below 0
+    }
+
+    gtk_widget_queue_draw(widget);
+
+    return TRUE;
+}
+
 
 
 
@@ -1192,7 +1215,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
     
-    drawMapRWY(cr, rwy_x, rwy_y, "KORD");
+    drawMapRWY(cr, rwy_x, rwy_y, "KORD", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
@@ -1229,6 +1252,13 @@ int main (int argc, char *argv[])
                      G_CALLBACK(on_button_press_event), NULL);
     g_signal_connect(G_OBJECT(darea), "motion-notify-event",
                      G_CALLBACK(on_motion_notify_event), NULL);
+    
+    g_signal_connect(G_OBJECT(darea), "scroll-event",
+                      G_CALLBACK(on_scroll_event), NULL);
+     gtk_widget_set_events(darea, gtk_widget_get_events(darea) |
+                                   GDK_BUTTON_PRESS_MASK |
+                                   GDK_POINTER_MOTION_MASK |
+                                   GDK_SCROLL_MASK); // add scroll mask
 
     // You must set the widget to receive these events.
     gtk_widget_set_events(darea, gtk_widget_get_events(darea) |
