@@ -152,19 +152,6 @@ distance(long double lat1, long double long1,
     return ans;
 }
 
-int
-count_newlines(char *buffer, int size)
-{
-    int count = 0;
-    for (int i = 0; i < size; i++)
-    {
-        if (buffer[i] == '\n')
-        {
-            count++;
-        }
-    }
-    return count;
-}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -172,240 +159,10 @@ count_newlines(char *buffer, int size)
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-static void
-MFD_low_freqswitchbox(cairo_t *cr, double x, double y)
-{
-    better_rectangle(cr, x, y, 60, 40, 1,1, 1);
-    better_rectangle(cr, x + 2.5, y + 2.5, 60-5, 40-5, 0.33, 0.29, 0.34);
-    
-    cairo_select_font_face(cr, "URWGordonW01-Medium", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 32.0);
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_move_to(cr, x + 37, y + 31);
-    cairo_show_text(cr, ">");
-    cairo_move_to(cr, x + 5 , y + 31);
-    cairo_show_text(cr, "<");
-}
-
-static void
-MFD_low_VHFpanel(cairo_t *cr, double x, double y)
-{
-    rounded_rectangle_wstroke(cr, 473 + x, 985 + y, 596, 393, 5, 0, 0.49, 0.69, 1, 1, 1, 2.5);
-    rounded_rectangle_wstroke(cr, 263 + x, 985 + y, 237, 100, 5, 0, 0.49, 0.69, 1, 1, 1, 2.5);
-    better_rectangle(cr, 467 + x, 986 + x, 130, 98, 0, 0.49, 0.69);
-    better_rectangle(cr, 474 + x, 989 + x, 130, 98, 0, 0.49, 0.69);
-    MFD_low_txtbox(cr, 485 + x, 1075 + y);
-    MFD_low_txtbox(cr, 825 + x, 1075 + y);
-    MFD_low_freqswitchbox(cr, 740, 1090);
-    
-    cairo_set_font_size(cr, 40.0);
-    cairo_move_to(cr, 308 + x, 1050 + y);
-    cairo_show_text(cr, "VHF 1");
-    
-    
-    
-    cairo_set_font_size(cr, 30.0);
-    cairo_move_to(cr, 500 + x, 1070 + x);
-    cairo_show_text(cr, "ACTIVE");
-}
 
 
-static void
-CircleND(cairo_t *cr, double x, double y) {
-    const char* degreesList []  = {"N", "3", "6", "E", "12", "15", "S", "21", "24", "W", "30", "33"};
-    
-    double r = 375;
-    double spike_len = 10;
-    int spike_count = 72;
-    double angle_increment = 2 * M_PI / spike_count;
-    
-    cairo_save(cr);
-    cairo_translate(cr, x, y);
-    cairo_rotate(cr, -M_PI / 2);
-    cairo_translate(cr, -x, -y);
-    
-    cairo_select_font_face(cr, "URWGordonW01-Medium", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    for (int i = 0; i < spike_count; ++i) {
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        double angle = i * angle_increment;
-        cairo_move_to(cr, x + r * cos(angle), y + r * sin(angle));
-        if (i % 2 != 0)
-        {
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            cairo_line_to(cr, x + (r + spike_len) * cos(angle), y + (r + spike_len) * sin(angle));
-            cairo_stroke(cr);
-            
-        }
-        else
-        {
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            cairo_line_to(cr, x + (r + (spike_len*2)) * cos(angle), y + (r + (spike_len*2)) * sin(angle));
-            cairo_stroke(cr);
-        }
-        
-        if (i % 6 == 0)
-        {
-            /*
-             cairo_set_font_size(cr, 35);
-             
-             draw_text(cr, degreesList[i/6],x + (r + (spike_len*2)) * cos(angle), y + (r + (spike_len*2)) * sin(angle), 1);
-             */
-            
-            
-            cairo_set_font_size(cr, 35);
-            cairo_save(cr);
-            double text_angle = angle + M_PI_2;
-            cairo_text_extents_t extents;
-            cairo_text_extents(cr, degreesList[i/6], &extents);
-            
-            cairo_translate(cr, x + (r + (spike_len*2)) * cos(angle), y + (r + (spike_len*2)) * sin(angle));
-            
-            cairo_rotate(cr, text_angle);
-            cairo_set_source_rgba(cr, 0, 0, 0, 0);
-            cairo_rectangle(cr, -extents.width/2, -extents.height/2, extents.width, extents.height);
-            cairo_stroke(cr);
-            
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            
-            
-            cairo_translate(cr, -extents.width/2, extents.height/20);
-            
-            
-            
-            cairo_show_text(cr, degreesList[i/6]);
-            cairo_restore(cr);
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            
-        }
-        
-        
-        
-    }
-    
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_arc(cr, x, y, r, 0, 2*M_PI);
-    cairo_stroke(cr);
-    
-    static const double dashed3[] = {{9.5, 51.0, 9.5}};
-    
-    cairo_set_dash(cr, dashed3, 1, 0);
-    cairo_arc(cr, x, y, r/2, 0, 2*M_PI);
-    cairo_stroke(cr);
-    
-    cairo_restore(cr);
-    
-    static const double undash[] = {{1.0}};
-    
-    cairo_set_dash(cr, undash, 0, 0);
-    
-    
-    
-    
-    //DRAW PLANE -------------------------------------------->
-    cairo_save(cr);
-    cairo_set_source_rgb(cr, 1, 1, 0);
-    cairo_set_line_width(cr, 4.0);
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-    cairo_move_to(cr, x, y-15);
-    cairo_line_to(cr, x, y+40);
-    
-    cairo_move_to(cr, x-35, y);
-    cairo_line_to(cr, x+35, y);
-    
-    cairo_move_to(cr, x-10, y+35);
-    cairo_line_to(cr, x+10, y+35);
-    
-    cairo_stroke(cr);
-    cairo_restore(cr);
-    //DRAW PLANE -------------------------------------------->
-    
-    //ROSE MODE -------------------------------------------->
-    
-    int mode = 0;
-    //-1: IRS not aligned
-    //0: Rose Mode
-    
-    
-    if (mode == -1)
-    {
-        cairo_set_source_rgb(cr, 1, 1, 0);
-        cairo_set_font_size(cr, 31);
-        draw_text(cr, "FPLN NOT AVAILABLE", x, y-100, 1);
-    }
-    else if (mode == 0)
-    {
-        //VOR 1 DRAW -------------------------------------------->
-        
-        
-        
-        //VOR 1 DRAW -------------------------------------------->
-        
-        //VOR 2 DRAW -------------------------------------------->
-        
-        /*
-         cairo_save(cr);
-         cairo_translate(cr, x, y);
-         cairo_rotate(cr, -M_PI / 4);
-         cairo_translate(cr, -x, -y);
-         */
-        
-        cairo_set_source_rgb(cr, 1, 1, 1);
-        cairo_move_to(cr, x, y - 375);
-        cairo_line_to(cr, x, y - 305);
-        
-        cairo_move_to(cr, x, y - 305);
-        cairo_line_to(cr, x - 35.5, y - 275);
-        
-        cairo_move_to(cr, x - 35.5, y - 275);
-        cairo_line_to(cr, x - 35.5, y - 205);
-        
-        cairo_move_to(cr, x, y - 305);
-        cairo_line_to(cr, x + 35.5, y - 275);
-        
-        cairo_move_to(cr, x + 35.5, y - 275);
-        cairo_line_to(cr, x + 35.5, 270);
-        
-        cairo_move_to(cr, x + 35.5, y - 275);
-        cairo_line_to(cr, x, y-255);
-        
-        cairo_move_to(cr, x - 35.5, y - 275);
-        cairo_line_to(cr, x, y-255);
-        
-        
-        
-        
-        
-        
-        cairo_move_to(cr, x, y + 375);
-        cairo_line_to(cr, x, y + 280 - 40);
-        
-        cairo_move_to(cr, x, y + 280 - 40);
-        cairo_line_to(cr, x + 35.5, y + 280 + 20- 40);
-        cairo_move_to(cr, x + 35.5, y + 280 + 20 - 40);
-        cairo_line_to(cr, x + 35.5, y + 200 - 40 + 40);
-        
-        
-        cairo_move_to(cr, x, y + 280 - 40);
-        cairo_line_to(cr, x - 35.5, y + 280 + 20 - 40);
-        cairo_move_to(cr, x - 35.5, y + 280 + 20 - 40);
-        cairo_line_to(cr, x - 35.5, y + 200 - 40 + 40);
-        
-        
-        cairo_stroke(cr);
-        
-        cairo_restore(cr);
-        //VOR2 DRAW -------------------------------------------->
-        
-        
-    }
-    
-    
-    
-    
-}
-
-
-int line_number = 1;
+int line_number = 0;
+int line_number_apt_occurrence = 0;
 char line[256];
 char line2[256];
 char aptRaw[256];
@@ -420,6 +177,10 @@ char rwyNumsList[32][2][48];
 int runwayCount = 0;
 
 char rwyCoordsListChar[10][4][48];
+
+
+double latLonList[256][2048][3];
+
 
 
 static void
@@ -449,7 +210,7 @@ parseAptdat(char* apt)
     
     const char* filename = "/Users/apt.dat";
     
-    const int chunk_size = 1024*4;
+    const int chunk_size = 8000000;
     char buffer[chunk_size];
     FILE *file = fopen(filename, "r");
     
@@ -471,6 +232,7 @@ parseAptdat(char* apt)
         {
             char *line_start = occurrence;
             char *line_end = occurrence;
+
             while (line_start > buffer && *(line_start - 1) != '\n')
             {
                 line_start--;
@@ -485,7 +247,7 @@ parseAptdat(char* apt)
             
             if (strncmp(line, "1    ", 5) == 0)
             {
-            
+               
                 
                 strncpy(aptRaw, line_start, line_length);
                 aptRaw[line_length] = '\0';
@@ -582,10 +344,73 @@ parseAptdat(char* apt)
                         rwyCount++;
                     }
                 }
+                
+                // Search for the prefix "110" and parse lat/long pairs until next "110"
+                int latLonCount[256] = {0};
+          
+
+                int sectionIndex = 0; // Variable to keep track of the current section index
+
+                char *line_start = strstr(line_end, "110 ");
+                if (line_start != NULL)
+                {
+                    // Move the pointer after "110 " to start parsing "111 " lines
+                    line_start += strlen("110 ");
+
+                    char *next_line = strtok(line_start, "\n");
+
+                    while (next_line != NULL)
+                    {
+                        // Assuming the input format is consistent, you can use sscanf to parse the floats
+                        float type, lat, lon;
+                        int num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
+
+                        if (num_matches >= 2)
+                        {
+                            if (latLonCount[sectionIndex] >= 1024)
+                            {
+                                printf("Exceeded maximum allowed latitude and longitude pairs in section %d.\n", sectionIndex);
+                                break;
+                            }
+
+                            if (type == 110)
+                            {
+                                // Move to the next section when encountering the next "110" line
+                                sectionIndex++;
+
+                                // Check if we exceed the maximum number of sections
+                                if (sectionIndex >= 256)
+                                {
+                                    printf("Exceeded maximum allowed number of sections.\n");
+                                    break;
+                                }
+
+                                // Move to the next line
+                                next_line = strtok(NULL, "\n");
+                                continue; // Skip the current iteration
+                            }
+
+                            // Store the parsed values in the latLonList array for the current section
+                            latLonList[sectionIndex][latLonCount[sectionIndex]][0] = type;
+                            latLonList[sectionIndex][latLonCount[sectionIndex]][1] = lat;
+                            latLonList[sectionIndex][latLonCount[sectionIndex]][2] = lon;
+                            latLonCount[sectionIndex]++;
+                        }
+
+                        next_line = strtok(NULL, "\n");
+                    }
+                }
+
+
+
+
+
+                
+                
             }
         }
         
-        line_number += count_newlines(buffer, chunk_size);
+       
     }
     
     
@@ -659,7 +484,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
     //780px to edge
     
 
-    int ppn = pixelsPerNM; //150 pixels per nautical mile. This is a 5nm scale right now.
+    int ppn = pixelsPerNM;
     int rwyAngle = 310;
   
     if (!timesParsed > 0)
@@ -753,6 +578,20 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
     const double a = 6378137.0; // Semi-major axis
     const double b = 6356752.314245; // Semi-minor axis
     
+
+    
+       
+    
+    
+    // Assuming you have defined x, y, ppn, and CURR_POS somewhere in your code
+    // double x, y, ppn;
+    // double CURR_POS[2]; // Assuming it's a 2-element array containing latitude and longitude
+
+    // Loop through the latLonList and calculate projected points
+    
+
+    
+    
     for (int f = 0; f <= 10; f++)
     {
         
@@ -761,12 +600,6 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
         double rwy_start_lon = rwyCoordsList[f][1];
         double rwy_end_lat = rwyCoordsList[f][2];
         double rwy_end_lon = rwyCoordsList[f][3];
-
-        // Convert runway start and end coordinates to Cartesian coordinates
-        double rwy_start_x = rwy_start_lon * a;
-        double rwy_start_y = log(tan(M_PI / 4.0 + rwy_start_lat * M_PI / 180.0 / 2.0)) * b;
-        double rwy_end_x = rwy_end_lon * a;
-        double rwy_end_y = log(tan(M_PI / 4.0 + rwy_end_lat * M_PI / 180.0 / 2.0)) * b;
 
         // Calculate the distance between the current position and runway start/end
         double nmDiffStart_x = distance(CURR_POS[0], CURR_POS[1], rwy_start_lat, CURR_POS[1]);
@@ -975,13 +808,67 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
         
     }
     
+    double point_lat;
+    double point_lon;
+    
+    double point_x;
+    double point_y;
+    cairo_save(cr);
+
+    cairo_set_source_rgb(cr, 1, 1, 0);
+    for (int e = 0; e < 256; e++) {
+        for (int q = 0; q < 2048; q++) {
+            double lat = latLonList[e][q][1];
+            double lon = latLonList[e][q][2];
+            
+            if (lat == 0)
+            {
+                break;
+            }
+
+            double nmDiff_x = distance(CURR_POS[0], CURR_POS[1], lat, CURR_POS[1]);
+            double nmDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], lon);
+
+            double point_x, point_y;
+
+            if (CURR_POS[0] > lat) {
+                point_x = x - (nmDiff_x * ppn);
+            } else {
+                point_x = x + (nmDiff_x * ppn);
+            }
+
+            if (CURR_POS[1] > lon) {
+                point_y = y - (nmDiff_y * ppn);
+            } else {
+                point_y = y + (nmDiff_y * ppn);
+            }
+
+            if (q == 0) {
+                cairo_move_to(cr, point_x, point_y);
+            } else {
+                cairo_line_to(cr, point_x, point_y);
+            }
+        }
+        
+        cairo_stroke(cr);
+        cairo_new_path(cr);
+    }
+
+
+
+
+    
+
     cairo_restore(cr);
+    
+    cairo_restore(cr);
+    
+    
     
     cairo_set_font_size(cr, 20);
    // draw_text(cr, test, 1000, 140, 2);
     
-    
-    
+
     
     
     
@@ -1215,7 +1102,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
     
-    drawMapRWY(cr, rwy_x, rwy_y, "KORD", ppn);
+    drawMapRWY(cr, rwy_x, rwy_y, "LFBO", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
