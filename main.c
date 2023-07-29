@@ -404,6 +404,7 @@ parseAptdat(char* apt)
                             latLonList[sectionIndex][latLonCount[sectionIndex]][3] = bezierLat;
                             latLonList[sectionIndex][latLonCount[sectionIndex]][4] = bezierLon;
                             latLonCount[sectionIndex]++;
+                            
                         }
 
                         next_line = strtok(NULL, "\n");
@@ -833,18 +834,31 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
     
     double prev_point_x;
     double prev_point_y;
+    
+    double first_point_y;
+    double first_point_x;
+    
+    srand(time(NULL));
     for (int e = 0; e < 256; e++) {
         cairo_new_path(cr);
-        for (int q = 0; q < 4096; q++) {
+        for (int q = 0; q < 4097; q++) {
             double lat = latLonList[e][q][1];
             double lon = latLonList[e][q][2];
             
-
+            
+            
+            double red = (double)rand() / RAND_MAX;
+            double green = (double)rand() / RAND_MAX;
+            double blue = (double)rand() / RAND_MAX;
 
             if (lat == 0 || lon == 0) {
+                cairo_set_source_rgb(cr, red, green, blue);
                 cairo_stroke(cr);
                 break;
             }
+            
+
+
 
             double nmDiff_x = distance(CURR_POS[0], CURR_POS[1], lat, CURR_POS[1]);
             double nmDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], lon);
@@ -863,11 +877,9 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
                 point_y = y + (nmDiff_y * ppn);
             }
             
-            
-            if (q > 0 && sqrt(pow(point_x - prev_point_x, 2) + pow(point_y - prev_point_y, 2)) < 6) {
-                point_x = prev_point_x;
-                point_y = prev_point_y;
-            }
+         
+
+
             
 
             if (latLonList[e][q][0] == 112) {
@@ -880,13 +892,17 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
                 
                 double ctrl_point_x = CURR_POS[0] > ctrlLat ? x - (ctrlDiff_x * ppn) : x + (ctrlDiff_x * ppn);
                 double ctrl_point_y = CURR_POS[1] > ctrlLon ? y - (ctrlDiff_y * ppn) : y + (ctrlDiff_y * ppn);
+                
+                
 
                 if (q == 0) {
                     cairo_move_to(cr, point_x, point_y);
                 } else {
-                    cairo_curve_to(cr, ctrl_point_x, ctrl_point_y, ctrl_point_x, ctrl_point_y, point_x, point_y);
+                    cairo_line_to(cr, point_x, point_y);
                 }
             } else {
+                
+                
                 if (q == 0) {
                     cairo_move_to(cr, point_x, point_y);
                 } else {
@@ -894,11 +910,26 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
                 }
             }
             
+           
+            
+            
+            cairo_arc(cr, point_x, point_y, 3, 0, 2*M_PI);
+            
+            
+            if (q == 0)
+            {
+                first_point_x = point_x;
+                first_point_y = point_y;
+            }
+            
+           
+            
             prev_point_x = point_x;
             prev_point_y = point_y;
 
         }
         
+        cairo_line_to(cr, first_point_x, first_point_y);
         
         
     }
@@ -1151,7 +1182,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
     
-    drawMapRWY(cr, rwy_x, rwy_y, "KORD", ppn);
+    drawMapRWY(cr, rwy_x, rwy_y, "LFPG", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
