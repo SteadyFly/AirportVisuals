@@ -179,7 +179,7 @@ int runwayCount = 0;
 char rwyCoordsListChar[10][4][48];
 
 
-double latLonList[256][2048][3];
+double latLonList[256][4096][5];
 
 
 
@@ -362,8 +362,15 @@ parseAptdat(char* apt)
                     while (next_line != NULL)
                     {
                         // Assuming the input format is consistent, you can use sscanf to parse the floats
-                        float type, lat, lon;
+                        float type, lat, lon, bezierLat, bezierLon;
                         int num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
+                        
+                        if (type == 112)
+                        {
+                            num_matches = sscanf(next_line, "%f %f %f %f %f", &type, &lat, &lon, &bezierLat, &bezierLon);
+                        }
+                        
+                        
 
                         if (num_matches >= 2)
                         {
@@ -394,6 +401,8 @@ parseAptdat(char* apt)
                             latLonList[sectionIndex][latLonCount[sectionIndex]][0] = type;
                             latLonList[sectionIndex][latLonCount[sectionIndex]][1] = lat;
                             latLonList[sectionIndex][latLonCount[sectionIndex]][2] = lon;
+                            latLonList[sectionIndex][latLonCount[sectionIndex]][3] = bezierLat;
+                            latLonList[sectionIndex][latLonCount[sectionIndex]][4] = bezierLon;
                             latLonCount[sectionIndex]++;
                         }
 
@@ -813,16 +822,27 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
     
     double point_x;
     double point_y;
+    
+    double firstx;
+    double firsty;
     cairo_save(cr);
+    
+    cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
 
     cairo_set_source_rgb(cr, 1, 1, 0);
+    
+    double prev_point_x;
+    double prev_point_y;
     for (int e = 0; e < 256; e++) {
-        for (int q = 0; q < 2048; q++) {
+        cairo_new_path(cr);
+        for (int q = 0; q < 4096; q++) {
             double lat = latLonList[e][q][1];
             double lon = latLonList[e][q][2];
             
-            if (lat == 0)
-            {
+
+
+            if (lat == 0 || lon == 0) {
+                cairo_stroke(cr);
                 break;
             }
 
@@ -842,16 +862,45 @@ drawMapRWY(cairo_t *cr, double x, double y, char* apt, int pixelsPerNM)
             } else {
                 point_y = y + (nmDiff_y * ppn);
             }
-
-            if (q == 0) {
-                cairo_move_to(cr, point_x, point_y);
-            } else {
-                cairo_line_to(cr, point_x, point_y);
+            
+            
+            if (q > 0 && sqrt(pow(point_x - prev_point_x, 2) + pow(point_y - prev_point_y, 2)) < 6) {
+                point_x = prev_point_x;
+                point_y = prev_point_y;
             }
+            
+
+            if (latLonList[e][q][0] == 112) {
+                // Using bezier control points from 3rd and 4th index
+                double ctrlLat = latLonList[e][q][3];
+                double ctrlLon = latLonList[e][q][4];
+                
+                double ctrlDiff_x = distance(CURR_POS[0], CURR_POS[1], ctrlLat, CURR_POS[1]);
+                double ctrlDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], ctrlLon);
+                
+                double ctrl_point_x = CURR_POS[0] > ctrlLat ? x - (ctrlDiff_x * ppn) : x + (ctrlDiff_x * ppn);
+                double ctrl_point_y = CURR_POS[1] > ctrlLon ? y - (ctrlDiff_y * ppn) : y + (ctrlDiff_y * ppn);
+
+                if (q == 0) {
+                    cairo_move_to(cr, point_x, point_y);
+                } else {
+                    cairo_curve_to(cr, ctrl_point_x, ctrl_point_y, ctrl_point_x, ctrl_point_y, point_x, point_y);
+                }
+            } else {
+                if (q == 0) {
+                    cairo_move_to(cr, point_x, point_y);
+                } else {
+                    cairo_line_to(cr, point_x, point_y);
+                }
+            }
+            
+            prev_point_x = point_x;
+            prev_point_y = point_y;
+
         }
         
-        cairo_stroke(cr);
-        cairo_new_path(cr);
+        
+        
     }
 
 
@@ -1102,7 +1151,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
     
-    drawMapRWY(cr, rwy_x, rwy_y, "LFBO", ppn);
+    drawMapRWY(cr, rwy_x, rwy_y, "KORD", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr,
