@@ -145,7 +145,7 @@ distance(long double lat1, long double long1,
 
 
 
-0olll
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------UTIL FUNCTIONS END!!--------------------------------------------------------------------------------------------
@@ -173,6 +173,12 @@ int runwayCount = 0;
 char rwyCoordsListChar[10][4][48];
 
 double latLonList[512][8192][5];
+
+char *line_end;
+char *line_start;
+
+const int chunk_size = 8000000;
+char buffer[chunk_size];
 
 static void
 parseRWYList()
@@ -226,6 +232,217 @@ parseRWYList()
     }
 }
 
+
+static void
+parseIataCode()
+{
+    char *iata_start = strstr(line_end, "1302 iata_code");
+    if (iata_start != NULL)
+    {
+        iata_start += 5;
+        char *iata_end = iata_start;
+        while (*iata_end != '\n' && *iata_end != '\0')
+        {
+            iata_end++;
+        }
+        int iata_length = iata_end - iata_start;
+        strncpy(iata_code, iata_start, iata_length);
+        iata_code[iata_length] = '\0';
+        
+        // cairo_show_text(cr, iata_code);
+    }
+}
+
+static void
+parseDatumLatLon()
+{
+    // Parse file for datum_lat
+    char *datum_lat_start = strstr(line_end, "1302 datum_lat");
+    if (datum_lat_start != NULL)
+    {
+        datum_lat_start += 5;
+        char *datum_lat_end = datum_lat_start;
+        while (*datum_lat_end != '\n' && *datum_lat_end != '\0')
+        {
+            datum_lat_end++;
+        }
+        int datum_lat_length = datum_lat_end - datum_lat_start;
+        strncpy(datum_lat, datum_lat_start, datum_lat_length);
+        datum_lat[datum_lat_length] = '\0';
+        
+        // cairo_show_text(cr, datum_lat);
+    }
+    
+    // Parse file for datum_lon
+    char *datum_lon_start = strstr(line_end, "1302 datum_lon");
+    if (datum_lon_start != NULL)
+    {
+        datum_lon_start += 5;
+        char *datum_lon_end = datum_lon_start;
+        while (*datum_lon_end != '\n' && *datum_lon_end != '\0')
+        {
+            datum_lon_end++;
+        }
+        int datum_lon_length = datum_lon_end - datum_lon_start;
+        strncpy(datum_lon, datum_lon_start, datum_lon_length);
+        datum_lon[datum_lon_length] = '\0';
+        
+        // cairo_show_text(cr, datum_lon);
+    }
+    
+}
+
+static void parseRWYS()
+{
+    char *occurrence2 = strstr(line_end, "100 ");
+    if (occurrence2 != NULL)
+    {
+        char *line_start2 = occurrence2;
+        char *line_end2 = occurrence2;
+
+        while (line_start2 > buffer && *(line_start2 - 1) != '\n')
+        {
+            line_start2--;
+        }
+        while (*line_end2 != '\n' && *line_end2 != '\0')
+        {
+            line_end2++;
+        }
+        int line_length2 = line_end2 - line_start2;
+
+        strncpy(rwyList[rwyCount], line_start2, line_length2);
+        rwyList[rwyCount][line_length2] = '\0';
+        rwyCount++;
+
+        while (rwyCount < 32)
+        {
+            occurrence2 = strstr(line_end2, "100 ");
+            if (occurrence2 == NULL)
+            {
+                break;
+            }
+            
+            char *next_line_check = occurrence2;
+            while (*next_line_check != '\n' && *next_line_check != '\0')
+            {
+                next_line_check++;
+            }
+            if (*next_line_check == '\0')
+            {
+                break;
+            }
+            next_line_check++;
+
+            if (strncmp(next_line_check, "100 ", 4) != 0)
+            {
+                // If the next line doesn't start with 100, break
+                break;
+            }
+
+            line_start2 = occurrence2;
+            line_end2 = occurrence2;
+            while (*line_end2 != '\n' && *line_end2 != '\0')
+            {
+                line_end2++;
+            }
+            line_length2 = line_end2 - line_start2;
+
+            strncpy(rwyList[rwyCount], line_start2, line_length2);
+            rwyList[rwyCount][line_length2] = '\0';
+            rwyCount++;
+        }
+    }
+}
+
+
+static void
+parseTaxiway()
+{
+ 
+    // Search for the prefix "110" and parse lat/long pairs until next "110"
+    int latLonCount[512] = {0};
+    
+    int sectionIndex = 0; // Variable to keep track of the current section index
+    
+    char *line_start = strstr(line_end, "110 ");
+    char *line_start_114 = strstr(line_end, "114 ");
+    
+    // Use the earliest occurrence of either "110 " or "114 "
+    if (line_start_114 != NULL && (line_start == NULL || line_start_114 < line_start))
+    {
+        line_start = line_start_114;
+    }
+    
+    if (line_start != NULL)
+    {
+        // Move the pointer after "110 " or "114 " to start parsing "111 " lines
+        line_start += 4; // Both "110 " and "114 " have a length of 4
+        
+        char *next_line = strtok(line_start, "\n");
+        
+        while (next_line != NULL)
+        {
+            float type, lat, lon, bezierLat = 0, bezierLon = 0; // Initialize bezier values to 0
+            int num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
+            
+            if (type == 112)
+            {
+                num_matches = sscanf(next_line, "%f %f %f %f %f", &type, &lat, &lon, &bezierLat, &bezierLon);
+            }
+            
+            if (type == 110)
+            {
+                next_line = strtok(NULL, "\n");
+                continue;
+            }
+            
+            if (num_matches >= 2)
+            {
+                // Store the parsed values in the latLonList array for the current section
+                latLonList[sectionIndex][latLonCount[sectionIndex]][0] = type;
+                latLonList[sectionIndex][latLonCount[sectionIndex]][1] = lat;
+                latLonList[sectionIndex][latLonCount[sectionIndex]][2] = lon;
+                latLonList[sectionIndex][latLonCount[sectionIndex]][3] = bezierLat;
+                latLonList[sectionIndex][latLonCount[sectionIndex]][4] = bezierLon;
+                latLonCount[sectionIndex]++;
+                
+                if (latLonCount[sectionIndex] >= 8192)
+                {
+                    printf("Exceeded maximum allowed latitude and longitude pairs in section %d.\n", sectionIndex);
+                    break;
+                }
+                
+                if (type == 110 || type == 114 || type == 113)
+                {
+                    // Move to the next section when encountering the next "110" line
+                    sectionIndex++;
+                    
+                    // Check if we exceed the maximum number of sections
+                    if (sectionIndex >= 512)
+                    {
+                        printf("Exceeded maximum allowed number of sections.\n");
+                        break;
+                    }
+                }
+            }
+            
+            if (type < 111 || type > 116)
+            {
+                if(type != 110 && type != 112 && type != 1 && type != 2 && type != 3)
+                {
+                    printf("Encountered line type not in range 111-116. Exiting.\n");
+                    break;
+                }
+            }
+            
+            next_line = strtok(NULL, "\n");
+        }
+    }
+}
+
+
+
+
 static void
 parseAptdat(char *apt)
 {
@@ -250,8 +467,7 @@ parseAptdat(char *apt)
     
     const char *filename = "/Users/apt.dat";
     
-    const int chunk_size = 8000000;
-    char buffer[chunk_size];
+
     FILE *file = fopen(filename, "r");
     
     char *eel[40];
@@ -267,8 +483,8 @@ parseAptdat(char *apt)
         char *occurrence = strstr(buffer, apt);
         if (occurrence != NULL)
         {
-            char *line_start = occurrence;
-            char *line_end = occurrence;
+            line_start = occurrence;
+            line_end = occurrence;
             
             while (line_start > buffer && *(line_start - 1) != '\n')
             {
@@ -289,177 +505,16 @@ parseAptdat(char *apt)
                 aptRaw[line_length] = '\0';
                 
                 // Parse file for iata_code
-                char *iata_start = strstr(line_end, "1302 iata_code");
-                if (iata_start != NULL)
-                {
-                    iata_start += 5;
-                    char *iata_end = iata_start;
-                    while (*iata_end != '\n' && *iata_end != '\0')
-                    {
-                        iata_end++;
-                    }
-                    int iata_length = iata_end - iata_start;
-                    strncpy(iata_code, iata_start, iata_length);
-                    iata_code[iata_length] = '\0';
-                    
-                    // cairo_show_text(cr, iata_code);
-                }
+                parseIataCode();
                 
-                // Parse file for datum_lat
-                char *datum_lat_start = strstr(line_end, "1302 datum_lat");
-                if (datum_lat_start != NULL)
-                {
-                    datum_lat_start += 5;
-                    char *datum_lat_end = datum_lat_start;
-                    while (*datum_lat_end != '\n' && *datum_lat_end != '\0')
-                    {
-                        datum_lat_end++;
-                    }
-                    int datum_lat_length = datum_lat_end - datum_lat_start;
-                    strncpy(datum_lat, datum_lat_start, datum_lat_length);
-                    datum_lat[datum_lat_length] = '\0';
-                    
-                    // cairo_show_text(cr, datum_lat);
-                }
+                //Parse file for datum lat & lon
+                parseDatumLatLon();
                 
-                // Parse file for datum_lon
-                char *datum_lon_start = strstr(line_end, "1302 datum_lon");
-                if (datum_lon_start != NULL)
-                {
-                    datum_lon_start += 5;
-                    char *datum_lon_end = datum_lon_start;
-                    while (*datum_lon_end != '\n' && *datum_lon_end != '\0')
-                    {
-                        datum_lon_end++;
-                    }
-                    int datum_lon_length = datum_lon_end - datum_lon_start;
-                    strncpy(datum_lon, datum_lon_start, datum_lon_length);
-                    datum_lon[datum_lon_length] = '\0';
-                    
-                    // cairo_show_text(cr, datum_lon);
-                }
                 
-                char *occurrence2 = strstr(buffer, "100 ");
-                if (occurrence2 != NULL)
-                {
-                    char *line_start2 = occurrence2;
-                    char *line_end2 = occurrence2;
-                    
-                    while (line_start2 > buffer && *(line_start2 - 1) != '\n')
-                    {
-                        line_start2--;
-                    }
-                    while (*line_end2 != '\n' && *line_end2 != '\0')
-                    {
-                        line_end2++;
-                    }
-                    int line_length2 = line_end2 - line_start2;
-                    
-                    strncpy(rwyList[rwyCount], line_start2, line_length2);
-                    rwyList[rwyCount][line_length2] = '\0';
-                    rwyCount++;
-                    
-                    while (rwyCount < 32)
-                    {
-                        char *occurrence3 = strstr(line_end2, "100 ");
-                        if (occurrence3 == NULL)
-                        {
-                            break;
-                        }
-                        
-                        line_start2 = occurrence3;
-                        line_end2 = occurrence3;
-                        while (*line_end2 != '\n' && *line_end2 != '\0')
-                        {
-                            line_end2++;
-                        }
-                        line_length2 = line_end2 - line_start2;
-                        
-                        strncpy(rwyList[rwyCount], line_start2, line_length2);
-                        rwyList[rwyCount][line_length2] = '\0';
-                        rwyCount++;
-                    }
-                }
+                parseRWYS();
                 
-                // Search for the prefix "110" and parse lat/long pairs until next "110"
-                int latLonCount[512] = {0};
-                
-                int sectionIndex = 0; // Variable to keep track of the current section index
-                
-                char *line_start = strstr(line_end, "110 ");
-                char *line_start_114 = strstr(line_end, "114 ");
-                
-                // Use the earliest occurrence of either "110 " or "114 "
-                if (line_start_114 != NULL && (line_start == NULL || line_start_114 < line_start))
-                {
-                    line_start = line_start_114;
-                }
-                
-                if (line_start != NULL)
-                {
-                    // Move the pointer after "110 " or "114 " to start parsing "111 " lines
-                    line_start += 4; // Both "110 " and "114 " have a length of 4
-                    
-                    char *next_line = strtok(line_start, "\n");
-                    
-                    while (next_line != NULL)
-                    {
-                        float type, lat, lon, bezierLat = 0, bezierLon = 0; // Initialize bezier values to 0
-                        int num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
-                        
-                        if (type == 112)
-                        {
-                            num_matches = sscanf(next_line, "%f %f %f %f %f", &type, &lat, &lon, &bezierLat, &bezierLon);
-                        }
-                        
-                        if (type == 110)
-                        {
-                            next_line = strtok(NULL, "\n");
-                            continue;
-                        }
-                        
-                        if (num_matches >= 2)
-                        {
-                            // Store the parsed values in the latLonList array for the current section
-                            latLonList[sectionIndex][latLonCount[sectionIndex]][0] = type;
-                            latLonList[sectionIndex][latLonCount[sectionIndex]][1] = lat;
-                            latLonList[sectionIndex][latLonCount[sectionIndex]][2] = lon;
-                            latLonList[sectionIndex][latLonCount[sectionIndex]][3] = bezierLat;
-                            latLonList[sectionIndex][latLonCount[sectionIndex]][4] = bezierLon;
-                            latLonCount[sectionIndex]++;
-                            
-                            if (latLonCount[sectionIndex] >= 8192)
-                            {
-                                printf("Exceeded maximum allowed latitude and longitude pairs in section %d.\n", sectionIndex);
-                                break;
-                            }
-                            
-                            if (type == 110 || type == 114 || type == 113)
-                            {
-                                // Move to the next section when encountering the next "110" line
-                                sectionIndex++;
-                                
-                                // Check if we exceed the maximum number of sections
-                                if (sectionIndex >= 512)
-                                {
-                                    printf("Exceeded maximum allowed number of sections.\n");
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (type < 111 || type > 116)
-                        {
-                            if(type != 110 && type != 112 && type != 1 && type != 2 && type != 3)
-                            {
-                                printf("Encountered line type not in range 111-116. Exiting.\n");
-                                break;
-                            }
-                        }
-                        
-                        next_line = strtok(NULL, "\n");
-                    }
-                }
+                parseTaxiway();
+
                 
             }
         }
@@ -557,13 +612,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char *apt, int pixelsPerNM)
     double center_y;
     double center_x;
     
-    cairo_save(cr);
+    
     cairo_translate(cr, x, y);
     cairo_rotate(cr, -M_PI / 2);
     cairo_translate(cr, -x, -y);
     
-    const double a = 6378137.0;      // Semi-major axis
-    const double b = 6356752.314245; // Semi-minor axis
+
     
     
     
@@ -792,12 +846,12 @@ drawMapRWY(cairo_t *cr, double x, double y, char *apt, int pixelsPerNM)
     cairo_set_line_width(cr, 0.7);
     for (int e = 0; e < 512; e++)
     {
-        /*
+        
          if (latLonList[e][0][0] == 0)
          {
          break;
          }
-         */
+         
         //cairo_new_path(cr);
    
         
@@ -909,7 +963,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char *apt, int pixelsPerNM)
             cairo_line_to(cr, first_point_x, first_point_y);
         }
         cairo_fill(cr);
-        
+    
         
         
         
@@ -921,6 +975,7 @@ drawMapRWY(cairo_t *cr, double x, double y, char *apt, int pixelsPerNM)
     
     cairo_set_font_size(cr, 20);
     // draw_text(cr, test, 1000, 140, 2);
+     
 }
 
 static void
