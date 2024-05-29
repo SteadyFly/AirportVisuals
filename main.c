@@ -57,16 +57,16 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     gtk_window_get_size(GTK_WINDOW(win), &width, &height);
 
     cairo_select_font_face(cr, "BoeingEICAS", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
 
     if (!timesParsed)
     {
-        parseAptdat("KDFW");
+        parseAptdat("KADS");
         timesParsed++;
     }
-    drawMapRWY(cr, rwy_x, rwy_y, "KDFW", ppn);
+    drawMap(cr, rwy_x, rwy_y, "KADS", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)

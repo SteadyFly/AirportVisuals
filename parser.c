@@ -67,7 +67,7 @@ static void parseDatumLatLon(char *line_end)
 
 static void parseRWYList()
 {
-    for (int i = 0; i < rwyCount; i++)
+    for (int i = 0; i <= rwyCount; i++)
     {
         char line[128];
         strcpy(line, rwyList[i]);

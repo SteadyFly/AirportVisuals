@@ -12,7 +12,7 @@ extern char datum_lat[256];
 extern char datum_lon[256];
 extern char rwyNumsList[32][2][48];
 extern double latLonList[512][8192][5];
-extern char rwyCoordsListChar[10][4][48]; // Declare the external variable
+extern char rwyCoordsListChar[10][4][48];
 extern int rwyCount;
 
 static void draw_text(cairo_t *cr, const char *text, double x, double y, int align)
@@ -48,11 +48,9 @@ static double distance(double lat1, double lon1, double lat2, double lon2)
     return R * c;
 }
 
-void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerNM)
+static void draw_airport_info(cairo_t *cr, double x, double y)
 {
-    int ppn = pixelsPerNM;
-
-    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_set_source_rgb(cr, 0, 0, 0);
 
     char aptFull[256];
     memcpy(aptFull, &aptRaw[18], 255);
@@ -71,35 +69,22 @@ void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerN
     aptIATA[3] = '\0';
     cairo_set_font_size(cr, 35);
     draw_text(cr, aptIATA, 1000 - 5, 70, 2);
+}
 
-    char datum_lat_raw[256];
-    memcpy(datum_lat_raw, datum_lat + 10, sizeof(datum_lat) - 14);
-    datum_lat_raw[sizeof(datum_lat) - 14] = '\0';
-    double datum_lat_value = atof(datum_lat_raw);
+static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_value, double datum_lon_value, int ppn)
+{
 
-    char datum_lon_raw[256];
-    memcpy(datum_lon_raw, datum_lon + 10, sizeof(datum_lon) - 14);
-    datum_lon_raw[sizeof(datum_lon) - 14] = '\0';
-    double datum_lon_value = atof(datum_lon_raw);
-
-    double rwyCoordsList[10][4];
-
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            char *ptr;
-            rwyCoordsList[i][j] = strtod(rwyCoordsListChar[i][j], &ptr);
-        }
-    }
-
+    
     double CURR_POS[] = {datum_lat_value, datum_lon_value};
     cairo_translate(cr, x, y);
     cairo_rotate(cr, -M_PI / 2);
     cairo_translate(cr, -x, -y);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
-    cairo_set_source_rgb(cr, 1, 1, 0);
+    cairo_set_source_rgb(cr, 0,0,0);
     cairo_set_line_width(cr, 0.7);
+
+    double firstLat = 0.0;
+    double firstLon = 0.0;
 
     for (int e = 0; e < 512; e++)
     {
@@ -110,6 +95,10 @@ void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerN
 
         for (int q = 0; q < 8192; q++)
         {
+            
+            firstLat = latLonList[e][0][1];
+            firstLon = latLonList[e][0][2];
+            
             double lat = latLonList[e][q][1];
             double lon = latLonList[e][q][2];
 
@@ -151,13 +140,33 @@ void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerN
             }
         }
 
-        double red = (double)rand() / RAND_MAX;
-        double green = (double)rand() / RAND_MAX;
-        double blue = (double)rand() / RAND_MAX;
+        double first_nmDiff_x = distance(CURR_POS[0], CURR_POS[1], firstLat, CURR_POS[1]);
+        double first_nmDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], firstLon);
 
-        cairo_set_source_rgb(cr, red, green, blue);
-        cairo_fill(cr);
+        double first_point_x = (CURR_POS[0] > firstLat) ? x - (first_nmDiff_x * ppn) : x + (first_nmDiff_x * ppn);
+        double first_point_y = (CURR_POS[1] > firstLon) ? y - (first_nmDiff_y * ppn) : y + (first_nmDiff_y * ppn);
+
+        cairo_line_to(cr, first_point_x, first_point_y);
+        cairo_stroke(cr); 
     }
+}
+
+
+static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value, double datum_lon_value, int ppn)
+{
+
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    double rwyCoordsList[10][4];
+    for (int i = 0; i < 10; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            char *ptr;
+            rwyCoordsList[i][j] = strtod(rwyCoordsListChar[i][j], &ptr);
+        }
+    }
+
+    double CURR_POS[] = {datum_lat_value, datum_lon_value};
 
     for (int f = 0; f <= 10; f++)
     {
@@ -176,7 +185,7 @@ void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerN
         double pxEnd_x = (CURR_POS[0] > rwy_end_lat) ? x - (nmDiffEnd_x * ppn) : x + (nmDiffEnd_x * ppn);
         double pxEnd_y = (CURR_POS[1] > rwy_end_lon) ? y - (nmDiffEnd_y * ppn) : y + (nmDiffEnd_y * ppn);
 
-        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_set_line_width(cr, ppn / 50);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
         cairo_move_to(cr, pxStart_x, pxStart_y);
@@ -284,4 +293,24 @@ void drawMapRWY(cairo_t *cr, double x, double y, const char *apt, int pixelsPerN
 
         cairo_restore(cr);
     }
+}
+
+void drawMap(cairo_t *cr, double x, double y, const char *apt, int pixelsPerNM)
+{
+    int ppn = pixelsPerNM;
+
+    draw_airport_info(cr, x, y);
+
+    char datum_lat_raw[256];
+    memcpy(datum_lat_raw, datum_lat + 10, sizeof(datum_lat) - 14);
+    datum_lat_raw[sizeof(datum_lat) - 14] = '\0';
+    double datum_lat_value = atof(datum_lat_raw);
+
+    char datum_lon_raw[256];
+    memcpy(datum_lon_raw, datum_lon + 10, sizeof(datum_lon) - 14);
+    datum_lon_raw[sizeof(datum_lon) - 14] = '\0';
+    double datum_lon_value = atof(datum_lon_raw);
+
+    draw_surroundings(cr, x, y, datum_lat_value, datum_lon_value, ppn);
+    draw_runways(cr, x, y, datum_lat_value, datum_lon_value, ppn);
 }
