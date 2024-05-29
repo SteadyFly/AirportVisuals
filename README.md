@@ -87,6 +87,8 @@ Currently this project is only tested on mac using X-Code
 6. gdk-pixbuf
 7. atk
 
+```gcc main.c drawing.c parser.c -o nd_display `pkg-config --cflags --libs gtk+-3.0 cairo` && ./nd_display```
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## License
