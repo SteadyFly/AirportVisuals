@@ -63,10 +63,10 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
 
     if (!timesParsed)
     {
-        parseAptdat("KADS");
+        parseAptdat("KLAX");
         timesParsed++;
     }
-    drawMap(cr, rwy_x, rwy_y, "KADS", ppn);
+    drawMap(cr, rwy_x, rwy_y, "KLAX", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
@@ -77,6 +77,9 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
 
 int main(int argc, char *argv[])
 {
+
+    exportLatLonListToCSV();
+
     GtkWidget *window;
     GtkWidget *darea;
 
@@ -99,6 +102,8 @@ int main(int argc, char *argv[])
 
     gtk_widget_show_all(window);
     gtk_main();
+
+    
 
     return 0;
 }

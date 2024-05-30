@@ -12,7 +12,7 @@ char datum_lon[256];
 char rwyNumsList[32][2][48];
 char rwyCoordsListChar[10][4][48]; // Add this declaration
 double latLonList[512][8192][5];
-char buffer[8000000];
+char buffer[600000];
 int rwyCount = 0;
 char rwyList[32][128]; // Declare this missing variable
 char line[256]; // Declare the missing 'line' variable
@@ -184,8 +184,8 @@ static void parseTaxiway(char *line_end)
     char *line_start = strstr(line_end, "110 ");
     if (line_start != NULL)
     {
-        line_start += 4;
         char *next_line = strtok(line_start, "\n");
+        next_line = strtok(NULL, "\n"); // Skip the initial line containing "110 "
 
         while (next_line != NULL)
         {
@@ -231,7 +231,7 @@ static void parseTaxiway(char *line_end)
 
             if (type < 111 || type > 116)
             {
-                if(type != 110 && type != 112 && type != 1 && type != 2 && type != 3)
+                if(type != 110 && type != 112 && type != 111 && type != 1 && type != 2 && type != 3)
                 {
                     printf("Encountered line type not in range 111-116. Exiting.\n");
                     break;
@@ -242,6 +242,7 @@ static void parseTaxiway(char *line_end)
         }
     }
 }
+
 
 void parseAptdat(const char *apt)
 {

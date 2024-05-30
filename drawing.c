@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <stdio.h>
+
 
 extern char aptRaw[256];
 extern char iata_code[256];
@@ -149,6 +151,29 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
         cairo_line_to(cr, first_point_x, first_point_y);
         cairo_stroke(cr); 
     }
+
+    FILE *fp;
+    fp = fopen("lat_lon_list.csv", "w");
+    if (fp == NULL) {
+        printf("Error opening file for writing!\n");
+        return;
+    }
+
+    // Write header
+    fprintf(fp, "Index,Latitude,Longitude\n");
+
+    // Write data
+    for (int i = 0; i < 512; i++) {
+        for (int j = 0; j < 8192; j++) {
+            if (latLonList[i][j][0] == 0) {
+                break;
+            }
+            fprintf(fp, "%d,%f,%f\n", i, latLonList[i][j][1], latLonList[i][j][2]);
+        }
+    }
+
+    fclose(fp);
+
 }
 
 
@@ -184,6 +209,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         double pxStart_y = (CURR_POS[1] > rwy_start_lon) ? y - (nmDiffStart_y * ppn) : y + (nmDiffStart_y * ppn);
         double pxEnd_x = (CURR_POS[0] > rwy_end_lat) ? x - (nmDiffEnd_x * ppn) : x + (nmDiffEnd_x * ppn);
         double pxEnd_y = (CURR_POS[1] > rwy_end_lon) ? y - (nmDiffEnd_y * ppn) : y + (nmDiffEnd_y * ppn);
+        double angle = atan2(pxEnd_y - pxStart_y, pxEnd_x - pxStart_x);
 
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_set_line_width(cr, ppn / 50);
@@ -191,9 +217,9 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_move_to(cr, pxStart_x, pxStart_y);
         cairo_line_to(cr, pxEnd_x, pxEnd_y);
         cairo_stroke(cr);
-
+        /*
         cairo_set_font_size(cr, 30);
-        double angle = atan2(pxEnd_y - pxStart_y, pxEnd_x - pxStart_x);
+        
         cairo_text_extents_t extents;
         cairo_text_extents(cr, rwyNumsList[f][1], &extents);
 
@@ -260,7 +286,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
         cairo_stroke(cr);
         cairo_restore(cr);
-
+*/
         char combinedNums[256];
         strcpy(combinedNums, rwyNumsList[f][0]);
         strcat(combinedNums, "-");
@@ -313,4 +339,10 @@ void drawMap(cairo_t *cr, double x, double y, const char *apt, int pixelsPerNM)
 
     draw_surroundings(cr, x, y, datum_lat_value, datum_lon_value, ppn);
     draw_runways(cr, x, y, datum_lat_value, datum_lon_value, ppn);
+}
+
+
+
+void exportLatLonListToCSV() {
+   
 }
