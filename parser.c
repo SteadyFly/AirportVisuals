@@ -10,12 +10,12 @@ char iata_code[256];
 char datum_lat[256];
 char datum_lon[256];
 char rwyNumsList[32][2][48];
-char rwyCoordsListChar[10][4][48]; // Add this declaration
+char rwyCoordsListChar[10][4][48]; 
 double latLonList[512][8192][5];
 char buffer[600000];
 int rwyCount = 0;
-char rwyList[32][128]; // Declare this missing variable
-char line[256]; // Declare the missing 'line' variable
+char rwyList[32][128]; 
+char line[256]; 
 
 static void parseIataCode(char *line_end)
 {
