@@ -11,10 +11,10 @@
 <h3 align="center">AirportVisuals</h3>
 
   <p align="center">
-    Basic gtk app that utilizes cairo and the x-plane apt.dat to display an airport map given an ICAO code.
+    Basic standalone gtk app that utilizes cairo and the x-plane apt.dat to display an airport map given an ICAO code. Plans to add SID/STAR viewing capabilities along with frequency lists. To be implemented as a X-Plane app (closed-source, payware).
     <br />
     <br />
-    <b>ALPHA 0.1, STILL NEEDS A LOT OF WORK<b>
+    <b>ALPHA 0.2, STILL NEEDS A LOT OF WORK<b>
       <br />
     <br />
     <a ><img align="center" width="500" src="https://i.ibb.co/94KLjmb/Screenshot-2024-05-29-at-11-15-06-PM.png"></a>
