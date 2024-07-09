@@ -10,12 +10,12 @@ char iata_code[256];
 char datum_lat[256];
 char datum_lon[256];
 char rwyNumsList[32][2][48];
-char rwyCoordsListChar[10][4][48]; 
-double latLonList[512][8192][5];
-char buffer[600000];
+char rwyCoordsListChar[10][4][48]; // Add this declaration
+double latLonList[512][256][5];
+char buffer[8000000];
 int rwyCount = 0;
-char rwyList[32][128]; 
-char line[256]; 
+char rwyList[32][128]; // Declare this missing variable
+char line[256]; // Declare the missing 'line' variable
 
 static void parseIataCode(char *line_end)
 {
@@ -156,10 +156,7 @@ static void parseRWYS(char *line_end)
             }
             next_line_check++;
 
-            if (strncmp(next_line_check, "100 ", 4) != 0)
-            {
-                break;
-            }
+         
 
             line_start2 = occurrence2;
             line_end2 = occurrence2;
@@ -172,29 +169,38 @@ static void parseRWYS(char *line_end)
             strncpy(rwyList[rwyCount], line_start2, line_length2);
             rwyList[rwyCount][line_length2] = '\0';
             rwyCount++;
+
+            if (strncmp(next_line_check, "100 ", 4) != 0)
+            {
+                break;
+            }
         }
     }
+    printf("%d", rwyCount);
 }
 
 static void parseTaxiway(char *line_end)
 {
-    int latLonCount[512] = {0};
+    int latLonCount[8192] = {0};
     int sectionIndex = 0;
 
     char *line_start = strstr(line_end, "110 ");
     if (line_start != NULL)
     {
         char *next_line = strtok(line_start, "\n");
-        next_line = strtok(NULL, "\n"); // Skip the initial line containing "110 "
+        next_line = strtok(NULL, "\n"); 
 
         while (next_line != NULL)
         {
             float type, lat, lon, bezierLat = 0, bezierLon = 0;
-            int num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
-
+            int num_matches = 0;
             if (type == 112)
             {
-                num_matches = sscanf(next_line, "%f %f %f %f %f", &type, &lat, &lon, &bezierLat, &bezierLon);
+                 num_matches = sscanf(next_line, "%f %f %f %f %f", &type, &lat, &lon, &bezierLat, &bezierLon);
+            }
+            else
+            {
+                num_matches = sscanf(next_line, "%f %f %f", &type, &lat, &lon);
             }
 
             if (type == 110)
@@ -218,7 +224,7 @@ static void parseTaxiway(char *line_end)
                     break;
                 }
 
-                if (type == 110 || type == 114 || type == 113)
+                if (type == 110 || type == 114 || type == 113 || type == 115 || type == 116)
                 {
                     sectionIndex++;
                     if (sectionIndex >= 512)
@@ -229,14 +235,14 @@ static void parseTaxiway(char *line_end)
                 }
             }
 
-            if (type < 111 || type > 116)
+           
+            if(type != 110 && type != 112 && type != 113 && type != 114 
+             && type != 111 && type != 1 && type != 2 && type != 3)
             {
-                if(type != 110 && type != 112 && type != 111 && type != 1 && type != 2 && type != 3)
-                {
-                    printf("Encountered line type not in range 111-116. Exiting.\n");
-                    break;
-                }
+                printf("Encountered line type not in range 111-116. Exiting.\n");
+                break;
             }
+        
 
             next_line = strtok(NULL, "\n");
         }
@@ -274,11 +280,10 @@ void parseAptdat(const char *apt)
             strncpy(line, line_start, line_length);
             line[line_length] = '\0';
 
-            if (strncmp(line, "1    ", 5) == 0)
+            if (strncmp(line, "1    ", 4) == 0)
             {
                 strncpy(aptRaw, line_start, line_length);
                 aptRaw[line_length] = '\0';
-
                 parseIataCode(line_end);
                 parseDatumLatLon(line_end);
                 parseRWYS(line_end);

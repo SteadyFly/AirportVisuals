@@ -13,7 +13,7 @@ extern char iata_code[256];
 extern char datum_lat[256];
 extern char datum_lon[256];
 extern char rwyNumsList[32][2][48];
-extern double latLonList[512][8192][5];
+extern double latLonList[512][256][5];
 extern char rwyCoordsListChar[10][4][48];
 extern int rwyCount;
 
@@ -50,6 +50,17 @@ static double distance(double lat1, double lon1, double lat2, double lon2)
     return R * c;
 }
 
+void calculate_quadratic_bezier(double *p0, double *p1, double *p2, double *result, int resolution) {
+    for (int i = 0; i <= resolution; i++) {
+        double t = (double)i / resolution;
+        double u = 1 - t;
+        result[2 * i] = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0];
+        result[2 * i + 1] = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
+    }
+}
+
+//-------------------------------------------
+
 static void draw_airport_info(cairo_t *cr, double x, double y)
 {
     cairo_set_source_rgb(cr, 0, 0, 0);
@@ -73,7 +84,7 @@ static void draw_airport_info(cairo_t *cr, double x, double y)
     draw_text(cr, aptIATA, 1000 - 5, 70, 2);
 }
 
-static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_value, double datum_lon_value, int ppn)
+static void draw_pavement(cairo_t *cr, double x, double y, double datum_lat_value, double datum_lon_value, int ppn)
 {
 
     
@@ -83,7 +94,7 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
     cairo_translate(cr, -x, -y);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
     cairo_set_source_rgb(cr, 0,0,0);
-    cairo_set_line_width(cr, 0.7);
+    cairo_set_line_width(cr, 1);
 
     double firstLat = 0.0;
     double firstLon = 0.0;
@@ -94,6 +105,9 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
         {
             break;
         }
+
+        cairo_new_path(cr);
+        cairo_set_source_rgb(cr, 0,0,0);
 
         for (int q = 0; q < 8192; q++)
         {
@@ -131,10 +145,11 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
             {
                 point_y = y + (nmDiff_y * ppn);
             }
-
+        
             if (q == 0)
             {
                 cairo_move_to(cr, point_x, point_y);
+
             }
             else
             {
@@ -142,14 +157,12 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
             }
         }
 
-        double first_nmDiff_x = distance(CURR_POS[0], CURR_POS[1], firstLat, CURR_POS[1]);
-        double first_nmDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], firstLon);
 
-        double first_point_x = (CURR_POS[0] > firstLat) ? x - (first_nmDiff_x * ppn) : x + (first_nmDiff_x * ppn);
-        double first_point_y = (CURR_POS[1] > firstLon) ? y - (first_nmDiff_y * ppn) : y + (first_nmDiff_y * ppn);
-
-        cairo_line_to(cr, first_point_x, first_point_y);
+        //cairo_line_to(cr, first_point_x, first_point_y);
+       // cairo_close_path(cr);
         cairo_stroke(cr); 
+        
+        
     }
 
     FILE *fp;
@@ -175,6 +188,7 @@ static void draw_surroundings(cairo_t *cr, double x, double y, double datum_lat_
     fclose(fp);
 
 }
+
 
 
 static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value, double datum_lon_value, int ppn)
@@ -212,12 +226,12 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         double angle = atan2(pxEnd_y - pxStart_y, pxEnd_x - pxStart_x);
 
         cairo_set_source_rgb(cr, 0, 0, 0);
-        cairo_set_line_width(cr, ppn / 50);
+        cairo_set_line_width(cr, 10);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
         cairo_move_to(cr, pxStart_x, pxStart_y);
         cairo_line_to(cr, pxEnd_x, pxEnd_y);
         cairo_stroke(cr);
-        /*
+   //     /*
         cairo_set_font_size(cr, 30);
         
         cairo_text_extents_t extents;
@@ -233,7 +247,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_rotate(cr, M_PI);
         cairo_translate(cr, -center_x, -center_y);
 
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_source_rgb(cr, 1, 1, 1);
         cairo_move_to(cr, extents.x_bearing, extents.y_bearing + extents.height);
         cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
         cairo_line_to(cr, extents.x_bearing + extents.width / 2, extents.y_bearing - extents.height / 2);
@@ -242,7 +256,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_close_path(cr);
         cairo_fill(cr);
 
-        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_show_text(cr, rwyNumsList[f][1]);
 
         cairo_set_line_width(cr, 2.5);
@@ -265,7 +279,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_translate(cr, 0, -extents.height * 2);
         cairo_rotate(cr, M_PI);
 
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_source_rgb(cr, 1, 1, 1);
         cairo_move_to(cr, extents.x_bearing, extents.y_bearing + extents.height);
         cairo_line_to(cr, extents.x_bearing, extents.y_bearing);
         cairo_line_to(cr, extents.x_bearing + extents.width / 2, extents.y_bearing - extents.height / 2);
@@ -274,7 +288,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_close_path(cr);
         cairo_fill(cr);
 
-        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_show_text(cr, rwyNumsList[f][0]);
 
         cairo_set_line_width(cr, 2.5);
@@ -286,7 +300,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         cairo_line_to(cr, extents.x_bearing + extents.width, extents.y_bearing + extents.height);
         cairo_stroke(cr);
         cairo_restore(cr);
-*/
+//*/
         char combinedNums[256];
         strcpy(combinedNums, rwyNumsList[f][0]);
         strcat(combinedNums, "-");
@@ -337,7 +351,7 @@ void drawMap(cairo_t *cr, double x, double y, const char *apt, int pixelsPerNM)
     datum_lon_raw[sizeof(datum_lon) - 14] = '\0';
     double datum_lon_value = atof(datum_lon_raw);
 
-    draw_surroundings(cr, x, y, datum_lat_value, datum_lon_value, ppn);
+    draw_pavement(cr, x, y, datum_lat_value, datum_lon_value, ppn);
     draw_runways(cr, x, y, datum_lat_value, datum_lon_value, ppn);
 }
 

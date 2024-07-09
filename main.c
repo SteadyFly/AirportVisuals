@@ -7,11 +7,15 @@
 #include "parser.h"
 
 int timesParsed = 0;
-double rwy_x = 500;
-double rwy_y = 500;
+double rwy_x = 250;
+double rwy_y = 250;
 double click_x = 0;
 double click_y = 0;
-int ppn = 260;
+int ppn = 110;
+char airport[4];
+
+// Path to your icon file
+const char *icon_path = "./icon.png";
 
 static gboolean on_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
@@ -60,13 +64,13 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_rectangle(cr, 0, 0, 10000, 10000);
     cairo_fill(cr);
-
+    
     if (!timesParsed)
     {
-        parseAptdat("KLAX");
+        parseAptdat("LFPG");
         timesParsed++;
     }
-    drawMap(cr, rwy_x, rwy_y, "KLAX", ppn);
+    drawMap(cr, rwy_x, rwy_y, "LFPG", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
@@ -77,8 +81,8 @@ static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data
 
 int main(int argc, char *argv[])
 {
-
     exportLatLonListToCSV();
+
 
     GtkWidget *window;
     GtkWidget *darea;
@@ -97,13 +101,14 @@ int main(int argc, char *argv[])
 
     gtk_widget_set_events(darea, gtk_widget_get_events(darea) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK);
 
-    gtk_window_set_default_size(GTK_WINDOW(window), 1000, 1000);
+    gtk_window_set_default_size(GTK_WINDOW(window), 900, 500);
     gtk_window_set_title(GTK_WINDOW(window), "APTVISUALS");
+    gtk_window_set_icon_from_file(GTK_WINDOW(window), icon_path, NULL);
+
+   
 
     gtk_widget_show_all(window);
     gtk_main();
-
-    
 
     return 0;
 }
