@@ -17,7 +17,7 @@
     <b>ALPHA 0.2, STILL NEEDS A LOT OF WORK<b>
       <br />
     <br />
-    <a ><img align="center" width="500" src="https://i.ibb.co/94KLjmb/Screenshot-2024-05-29-at-11-15-06-PM.png"></a>
+    <a ><img align="center" width="500" src="https://i.ibb.co/61jfXts/Screenshot-2024-08-08-at-10-19-49-AM.png"></a>
     <br />
     <br />
     <br />
