@@ -67,10 +67,10 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
     
     if (!timesParsed)
     {
-        parseAptdat("LFPG");
+        parseAptdat("LFBO");
         timesParsed++;
     }
-    drawMap(cr, rwy_x, rwy_y, "LFPG", ppn);
+    drawMap(cr, rwy_x, rwy_y, "LFBO", ppn);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)

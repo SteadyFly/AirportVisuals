@@ -13,7 +13,7 @@ extern char iata_code[256];
 extern char datum_lat[256];
 extern char datum_lon[256];
 extern char rwyNumsList[32][2][48];
-extern double latLonList[512][256][5];
+extern double latLonList[4096][6000][5];
 extern char rwyCoordsListChar[10][4][48];
 extern int rwyCount;
 
@@ -99,7 +99,7 @@ static void draw_pavement(cairo_t *cr, double x, double y, double datum_lat_valu
     double firstLat = 0.0;
     double firstLon = 0.0;
 
-    for (int e = 0; e < 512; e++)
+    for (int e = 0; e < 4096; e++)
     {
         if (latLonList[e][0][0] == 0)
         {
@@ -159,8 +159,76 @@ static void draw_pavement(cairo_t *cr, double x, double y, double datum_lat_valu
 
 
         //cairo_line_to(cr, first_point_x, first_point_y);
-       // cairo_close_path(cr);
+        cairo_close_path(cr);
+        cairo_fill(cr); 
+        
+        
+        
+    }
+
+    for (int e = 0; e < 4096; e++)
+    {
+        if (latLonList[e][0][0] == 0)
+        {
+            break;
+        }
+
+        cairo_new_path(cr);
+        cairo_set_source_rgb(cr, 1,1,1);
+
+        for (int q = 0; q < 8192; q++)
+        {
+            
+            firstLat = latLonList[e][0][1];
+            firstLon = latLonList[e][0][2];
+            
+            double lat = latLonList[e][q][1];
+            double lon = latLonList[e][q][2];
+
+            if (lat == 0 || lon == 0)
+            {
+                break;
+            }
+
+            double nmDiff_x = distance(CURR_POS[0], CURR_POS[1], lat, CURR_POS[1]);
+            double nmDiff_y = distance(CURR_POS[0], CURR_POS[1], CURR_POS[0], lon);
+
+            double point_x, point_y;
+
+            if (CURR_POS[0] > lat)
+            {
+                point_x = x - (nmDiff_x * ppn);
+            }
+            else
+            {
+                point_x = x + (nmDiff_x * ppn);
+            }
+
+            if (CURR_POS[1] > lon)
+            {
+                point_y = y - (nmDiff_y * ppn);
+            }
+            else
+            {
+                point_y = y + (nmDiff_y * ppn);
+            }
+        
+            if (q == 0)
+            {
+                cairo_move_to(cr, point_x, point_y);
+
+            }
+            else
+            {
+                cairo_line_to(cr, point_x, point_y);
+            }
+        }
+
+
+        //cairo_line_to(cr, first_point_x, first_point_y);
+        cairo_close_path(cr);
         cairo_stroke(cr); 
+        
         
         
     }
@@ -176,7 +244,7 @@ static void draw_pavement(cairo_t *cr, double x, double y, double datum_lat_valu
     fprintf(fp, "Index,Latitude,Longitude\n");
 
     // Write data
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < 2056; i++) {
         for (int j = 0; j < 8192; j++) {
             if (latLonList[i][j][0] == 0) {
                 break;
@@ -184,6 +252,8 @@ static void draw_pavement(cairo_t *cr, double x, double y, double datum_lat_valu
             fprintf(fp, "%d,%f,%f\n", i, latLonList[i][j][1], latLonList[i][j][2]);
         }
     }
+
+   
 
     fclose(fp);
 
@@ -202,6 +272,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         {
             char *ptr;
             rwyCoordsList[i][j] = strtod(rwyCoordsListChar[i][j], &ptr);
+           
         }
     }
 
@@ -225,7 +296,7 @@ static void draw_runways(cairo_t *cr, double x, double y, double datum_lat_value
         double pxEnd_y = (CURR_POS[1] > rwy_end_lon) ? y - (nmDiffEnd_y * ppn) : y + (nmDiffEnd_y * ppn);
         double angle = atan2(pxEnd_y - pxStart_y, pxEnd_x - pxStart_x);
 
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_source_rgb(cr, 0, 1, 0);
         cairo_set_line_width(cr, 10);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
         cairo_move_to(cr, pxStart_x, pxStart_y);
